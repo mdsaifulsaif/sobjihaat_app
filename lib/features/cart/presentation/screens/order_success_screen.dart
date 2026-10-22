@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../orders/presentation/screens/my_orders_screen.dart';
 
 class OrderSuccessScreen extends StatelessWidget {
   final String? orderId;
@@ -150,6 +151,29 @@ class OrderSuccessScreen extends StatelessWidget {
               ),
 
               const Spacer(flex: 2),
+
+              // View My Orders Button
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary, width: 1.5),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.receipt_long_rounded, size: 20),
+                label: const Text(
+                  'View My Orders',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
 
               // Back to Home Button
               ElevatedButton(

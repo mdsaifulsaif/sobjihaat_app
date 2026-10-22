@@ -7,6 +7,7 @@ import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../data/models/user_model.dart';
+import '../../../orders/presentation/screens/my_orders_screen.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 
@@ -865,7 +866,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     title: 'Order History',
                     subtitle: 'View active and previous grocery orders',
                     onTap: () {
-                      SnackbarUtils.showInfo(context, 'Opening order history...');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MyOrdersScreen(),
+                        ),
+                      );
                     },
                   ),
                   const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),

@@ -8,6 +8,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/profile_screen.dart';
+import '../../../orders/presentation/screens/my_orders_screen.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../products/data/models/product_model.dart';
 import '../../../products/presentation/providers/wishlist_provider.dart';
@@ -1589,7 +1590,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                        MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
                       );
                     },
                     child: Padding(
@@ -1853,7 +1854,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     title: const Text('Order History', style: TextStyle(fontWeight: FontWeight.w700)),
                     onTap: () {
                       Navigator.of(ctx).pop();
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MyOrdersScreen()));
                     },
                   ),
                   const Divider(height: 20),

@@ -41,6 +41,8 @@ class ApiConstants {
   // Order, Checkout & Coupon Endpoints
   static const String placeOrder = '/order/place-order';
   static const String myOrders = '/order/my-orders';
+  static String cancelOrder(String id) => '/order/cancel/$id';
+  static String trackOrder(String id) => '/order/track/$id';
   static const String shippingPreview = '/shipping/preview';
   static const String availableCoupons = '/coupons/available';
   static const String applyCoupon = '/coupons/apply';

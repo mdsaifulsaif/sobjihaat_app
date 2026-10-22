@@ -34,7 +34,15 @@ class ApiInterceptor extends QueuedInterceptor {
 
       if (refreshToken != null && refreshToken.isNotEmpty) {
         try {
-          final response = await dio.post(
+          final refreshDio = Dio(
+            BaseOptions(
+              baseUrl: dio.options.baseUrl,
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+            ),
+          );
+
+          final response = await refreshDio.post(
             ApiConstants.refreshToken,
             data: {'refreshToken': refreshToken},
             options: Options(
@@ -45,7 +53,8 @@ class ApiInterceptor extends QueuedInterceptor {
           );
 
           if (response.statusCode == 200 && response.data != null) {
-            final newAccessToken = response.data['accessToken'] as String?;
+            final data = response.data is Map ? response.data['data'] ?? response.data : response.data;
+            final newAccessToken = data['accessToken'] as String?;
             if (newAccessToken != null && newAccessToken.isNotEmpty) {
               await storageService.saveAccessToken(newAccessToken);
 
