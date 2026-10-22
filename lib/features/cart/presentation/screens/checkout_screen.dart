@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/screens/login_screen.dart';
 import '../../data/models/area_model.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/available_coupons_bottom_sheet.dart';
@@ -193,6 +195,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
 
+    final authState = ref.read(authNotifierProvider);
+    if (authState.user == null) {
+      SnackbarUtils.showInfo(context, 'Please login first to confirm your order');
+      final loggedIn = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+      if (loggedIn != true && ref.read(authNotifierProvider).user == null) {
+        return;
+      }
+    }
+
     setState(() => _isSubmitting = true);
 
     final todayStr = DateTime.now().toIso8601String().split('T')[0];
@@ -261,12 +274,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
         );
       }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        SnackbarUtils.showError(context, e.message);
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
         SnackbarUtils.showError(
           context,
-          'Failed to place order. Please check your connection and try again.',
+          e.toString().replaceAll('Exception: ', ''),
         );
       }
     }
