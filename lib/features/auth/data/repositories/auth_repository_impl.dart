@@ -30,6 +30,33 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<AuthResponse> googleLogin({
+    required String email,
+    required String firstName,
+    required String lastName,
+    required String googleId,
+    String? avatarUrl,
+  }) async {
+    final response = await remoteDataSource.googleLogin(
+      email: email,
+      firstName: firstName,
+      lastName: lastName,
+      googleId: googleId,
+      avatarUrl: avatarUrl,
+    );
+    if (response.accessToken != null && response.refreshToken != null) {
+      await storageService.saveTokens(
+        accessToken: response.accessToken!,
+        refreshToken: response.refreshToken!,
+      );
+    }
+    if (response.user != null) {
+      await storageService.saveUserData(jsonEncode(response.user!.toJson()));
+    }
+    return response;
+  }
+
+  @override
   Future<AuthResponse> register({
     required String firstName,
     required String lastName,

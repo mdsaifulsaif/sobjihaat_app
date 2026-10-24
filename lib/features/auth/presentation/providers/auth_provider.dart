@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/storage_service.dart';
@@ -115,6 +117,69 @@ class AuthNotifier extends Notifier<AuthState> {
       state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: 'An unexpected error occurred. Please try again.',
+      );
+      return false;
+    }
+  }
+
+  /// Google Sign In
+  Future<bool> signInWithGoogle() async {
+    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    try {
+      final googleSignIn = GoogleSignIn(
+        serverClientId: ApiConstants.googleClientId,
+        scopes: ['email', 'profile'],
+      );
+
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        state = state.copyWith(status: AuthStatus.unauthenticated);
+        return false;
+      }
+
+      final fullName = (account.displayName ?? '').trim();
+      final nameParts = fullName.split(RegExp(r'\s+'));
+      final firstName = nameParts.isNotEmpty && nameParts.first.isNotEmpty
+          ? nameParts.first
+          : (account.email.split('@').first);
+      final lastName = nameParts.length > 1
+          ? nameParts.sublist(1).join(' ')
+          : 'User';
+
+      final response = await _repository.googleLogin(
+        email: account.email,
+        firstName: firstName,
+        lastName: lastName,
+        googleId: account.id,
+        avatarUrl: account.photoUrl,
+      );
+
+      if (response.user != null) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          user: response.user,
+          successMessage: 'Welcome back, ${response.user?.firstName ?? ''}!',
+        );
+        return true;
+      }
+
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: response.message.isNotEmpty
+            ? response.message
+            : 'Google login failed.',
+      );
+      return false;
+    } on ApiException catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: e.message,
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: e.toString().replaceAll('Exception: ', ''),
       );
       return false;
     }
@@ -305,6 +370,10 @@ class AuthNotifier extends Notifier<AuthState> {
   /// Logout
   Future<void> logout() async {
     state = state.copyWith(status: AuthStatus.loading);
+    try {
+      final googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+    } catch (_) {}
     await _repository.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }

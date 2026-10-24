@@ -19,8 +19,13 @@ class ApiConstants {
 
   // http://10.0.2.2:5001/api/v1
 
+  // Google OAuth Configuration
+  static const String googleClientId =
+      '901609629765-f54kn16mg02ofp0qptfm00fv2n96khlb.apps.googleusercontent.com';
+
   // Auth Endpoints
   static const String login = '/auth/login';
+  static const String googleLogin = '/auth/google-login';
   static const String register = '/auth/register';
   static const String verifyEmail = '/auth/verify-email';
   static const String resendVerification = '/auth/resend-verification';

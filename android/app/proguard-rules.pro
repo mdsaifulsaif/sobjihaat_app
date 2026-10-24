@@ -14,6 +14,10 @@
 # Secure Storage
 -keep class androidx.security.crypto.** { *; }
 
+# Google Sign In and Play Services Auth
+-keep class com.google.android.gms.auth.api.signin.** { *; }
+-keep class io.flutter.plugins.googlesignin.** { *; }
+
 # Suppress warnings for Play Core deferred components
 -dontwarn com.google.android.play.core.**
 -dontwarn io.flutter.embedding.engine.deferredcomponents.**

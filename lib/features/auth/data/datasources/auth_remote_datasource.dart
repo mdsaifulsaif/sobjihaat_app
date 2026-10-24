@@ -7,6 +7,13 @@ import '../models/user_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<AuthResponse> login({required String email, required String password});
+  Future<AuthResponse> googleLogin({
+    required String email,
+    required String firstName,
+    required String lastName,
+    required String googleId,
+    String? avatarUrl,
+  });
   Future<AuthResponse> register({
     required String firstName,
     required String lastName,
@@ -45,6 +52,34 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'email': email.trim().toLowerCase(),
           'password': password,
         },
+      );
+      return AuthResponse.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<AuthResponse> googleLogin({
+    required String email,
+    required String firstName,
+    required String lastName,
+    required String googleId,
+    String? avatarUrl,
+  }) async {
+    try {
+      final payload = {
+        'email': email.trim().toLowerCase(),
+        'firstName': firstName.trim(),
+        'lastName': lastName.trim(),
+        'googleId': googleId.trim(),
+        if (avatarUrl != null && avatarUrl.trim().isNotEmpty)
+          'avatarUrl': avatarUrl.trim(),
+      };
+
+      final response = await dioClient.dio.post(
+        ApiConstants.googleLogin,
+        data: payload,
       );
       return AuthResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {

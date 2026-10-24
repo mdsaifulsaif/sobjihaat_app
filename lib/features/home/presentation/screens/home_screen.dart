@@ -7,6 +7,7 @@ import '../../../../core/utils/snackbar_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_state.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
+import '../../../auth/presentation/screens/register_screen.dart';
 import '../../../auth/presentation/screens/profile_screen.dart';
 import '../../../orders/presentation/screens/my_orders_screen.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
@@ -1669,7 +1670,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             MaterialPageRoute(builder: (_) => const LoginScreen()),
                           );
                         },
-                        child: const Text('SIGN IN', style: TextStyle(fontWeight: FontWeight.w800)),
+                        child: const Text('LOGIN', style: TextStyle(fontWeight: FontWeight.w800)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1686,10 +1687,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         onPressed: () {
                           Navigator.of(ctx).pop();
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
                           );
                         },
-                        child: const Text('JOIN', style: TextStyle(fontWeight: FontWeight.w800)),
+                        child: const Text('CREATE ACCOUNT', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                       ),
                     ),
                   ],

@@ -13,12 +13,12 @@ import '../providers/complaint_provider.dart';
 class ComplaintModal extends ConsumerStatefulWidget {
   const ComplaintModal({super.key});
 
-  /// Static method to display the complaint modal as a styled dialog
+  /// Static method to display the complaint modal as a bottom sheet
   static Future<void> show(BuildContext context) {
-    return showDialog(
+    return showModalBottomSheet(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => const ComplaintModal(),
     );
   }
@@ -249,29 +249,45 @@ class _ComplaintModalState extends ConsumerState<ComplaintModal> {
     final complaintState = ref.watch(complaintNotifierProvider);
     final isLoading = complaintState.status == ComplaintStateStatus.loading;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: Center(
-        child: Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 680),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        width: double.infinity,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.88,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 16,
+              offset: Offset(0, -4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: SafeArea(
+            top: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Top Drag Handle Indicator
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 10, bottom: 4),
+                    width: 40,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD1D5DB),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
                 // =========================
                 // Header (Matching Screenshot)
                 // =========================

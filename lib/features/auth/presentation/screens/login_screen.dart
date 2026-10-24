@@ -8,6 +8,8 @@ import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_logo.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/google_sign_in_button.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../home/presentation/screens/main_nav_screen.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
@@ -84,6 +86,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       } else if (authState.errorMessage != null) {
         SnackbarUtils.showError(context, authState.errorMessage!);
       }
+    }
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    FocusScope.of(context).unfocus();
+    final success =
+        await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+    if (!mounted) return;
+
+    final authState = ref.read(authNotifierProvider);
+    if (success) {
+      SnackbarUtils.showSuccess(context, 'Signed in with Google!');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainNavScreen()),
+      );
+    } else if (authState.errorMessage != null &&
+        authState.errorMessage!.isNotEmpty) {
+      SnackbarUtils.showError(context, authState.errorMessage!);
     }
   }
 
@@ -220,7 +240,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     size: 64,
                     subtitle: 'Sign in to access fresh organic produce',
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 28),
+
+                  // Google Login Button
+                  GoogleSignInButton(
+                    isLoading: authState.isLoading,
+                    onPressed: _handleGoogleLogin,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // OR Divider
+                  Row(
+                    children: [
+                      const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'OR',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                      const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
 
                   // Email Field
                   AppTextField(
