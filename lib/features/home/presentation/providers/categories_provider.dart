@@ -58,7 +58,7 @@ class CategoriesNotifier extends Notifier<CategoriesState> {
 
   HomeRemoteDataSource get _dataSource => ref.read(homeRemoteDataSourceProvider);
 
-  Future<void> fetchInitial({int limit = 6}) async {
+  Future<void> fetchInitial({int limit = 12}) async {
     state = state.copyWith(isLoading: true, errorMessage: null, limit: limit);
     try {
       final res = await _dataSource.getPaginatedCategories(

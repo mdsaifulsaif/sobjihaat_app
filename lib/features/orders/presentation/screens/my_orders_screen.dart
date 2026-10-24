@@ -7,7 +7,7 @@ import '../providers/order_provider.dart';
 import '../widgets/order_cancel_modal.dart';
 import '../widgets/order_card.dart';
 import '../widgets/order_details_modal.dart';
-import '../widgets/order_track_modal.dart';
+import 'track_order_screen.dart';
 
 class MyOrdersScreen extends ConsumerStatefulWidget {
   const MyOrdersScreen({super.key});
@@ -97,7 +97,11 @@ class _MyOrdersScreenState extends ConsumerState<MyOrdersScreen> {
   }
 
   void _showTrackModal(OrderModel order) {
-    OrderTrackModal.show(context, order: order);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TrackOrderScreen(initialOrderNumber: order.orderNumber),
+      ),
+    );
   }
 
   @override

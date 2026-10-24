@@ -4,10 +4,9 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/auth/presentation/screens/profile_screen.dart';
 import '../../features/products/presentation/providers/wishlist_provider.dart';
 import '../../features/products/presentation/screens/search_screen.dart';
-import '../../features/products/presentation/screens/wishlist_screen.dart';
+import 'sobjihaat_bottom_bar.dart';
 
 class SobjiHaatHeader extends ConsumerWidget implements PreferredSizeWidget {
   final bool showBackButton;
@@ -159,9 +158,8 @@ class SobjiHaatHeader extends ConsumerWidget implements PreferredSizeWidget {
               InkWell(
                 borderRadius: BorderRadius.circular(20),
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const WishlistScreen()),
-                  );
+                  ref.read(bottomNavIndexProvider.notifier).setIndex(2);
+                  Navigator.of(context).popUntil((route) => route.isFirst);
                 },
                 child: Container(
                   width: 40,
@@ -210,9 +208,8 @@ class SobjiHaatHeader extends ConsumerWidget implements PreferredSizeWidget {
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
                   if (authState.isAuthenticated) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                    );
+                    ref.read(bottomNavIndexProvider.notifier).setIndex(3);
+                    Navigator.of(context).popUntil((route) => route.isFirst);
                   } else {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const LoginScreen()),

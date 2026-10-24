@@ -8,10 +8,12 @@ import 'available_coupons_bottom_sheet.dart';
 
 class MiniCartBottomSheet extends ConsumerStatefulWidget {
   final VoidCallback? onProceedToCheckout;
+  final String? checkoutButtonText;
 
   const MiniCartBottomSheet({
     super.key,
     this.onProceedToCheckout,
+    this.checkoutButtonText,
   });
 
   static void show(BuildContext context) {
@@ -546,17 +548,23 @@ class _MiniCartBottomSheetState extends ConsumerState<MiniCartBottomSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
-                      children: const [
+                      children: [
                         Text(
-                          'Proceed to Checkout',
-                          style: TextStyle(
+                          widget.checkoutButtonText ?? 'Proceed to Checkout',
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                           ),
                         ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Icon(
+                          widget.checkoutButtonText != null
+                              ? Icons.arrow_back_rounded
+                              : Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ],
                     ),
                     Text(

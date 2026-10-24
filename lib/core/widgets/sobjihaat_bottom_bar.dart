@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
-import '../../features/auth/presentation/screens/profile_screen.dart';
 import '../../features/cart/presentation/providers/cart_provider.dart';
 import '../../features/cart/presentation/widgets/mini_cart_bottom_sheet.dart';
-import '../../features/home/presentation/screens/categories_screen.dart';
 import '../../features/products/presentation/providers/wishlist_provider.dart';
-import '../../features/products/presentation/screens/wishlist_screen.dart';
 
 Widget buildSobjiHaatFloatingCartButton(BuildContext context, WidgetRef ref) {
   final cartState = ref.watch(cartNotifierProvider);
@@ -77,6 +74,17 @@ Widget buildSobjiHaatFloatingCartButton(BuildContext context, WidgetRef ref) {
   );
 }
 
+class BottomNavNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setIndex(int index) => state = index;
+}
+
+final bottomNavIndexProvider = NotifierProvider<BottomNavNotifier, int>(() {
+  return BottomNavNotifier();
+});
+
 Widget buildSobjiHaatBottomAppBar(
   BuildContext context,
   WidgetRef ref, {
@@ -90,21 +98,8 @@ Widget buildSobjiHaatBottomAppBar(
       onTabSelected(index);
       return;
     }
-    if (index == 0) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    } else if (index == 1) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const CategoriesScreen()),
-      );
-    } else if (index == 2) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const WishlistScreen()),
-      );
-    } else if (index == 3) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const ProfileScreen()),
-      );
-    }
+    ref.read(bottomNavIndexProvider.notifier).setIndex(index);
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Widget buildNavItem({

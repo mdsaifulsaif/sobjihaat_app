@@ -18,11 +18,13 @@ import '../../../products/presentation/screens/wishlist_screen.dart';
 import '../../../products/presentation/widgets/product_card.dart';
 import '../../../products/presentation/widgets/product_quick_view_modal.dart';
 import '../../../subscriptions/data/models/subscription_package_model.dart';
+import '../../../subscriptions/presentation/widgets/subscription_setup_modal.dart';
 import '../../data/models/banner_model.dart';
 import '../../data/models/brand_model.dart';
 import '../../data/models/category_model.dart';
 import '../providers/home_provider.dart';
 import 'categories_screen.dart';
+import '../../../../core/widgets/sobjihaat_drawer.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -37,7 +39,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _bannerPageController = PageController();
   final _categoryScrollController = ScrollController();
   int _currentBannerIndex = 0;
-  String _selectedSubCategory = 'Household & Cleaning';
+  String? _selectedSubCategory;
 
   @override
   void dispose() {
@@ -69,7 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white,
-      drawer: _buildAppDrawer(context, homeAsync),
+      drawer: const SobjiHaatDrawer(),
       // Top Fixed Header - Exact match to sobjihaat-frontend MinHeader.tsx
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(118),
@@ -764,8 +766,85 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // --- 7. Curated Subscription Packages Section (Matching Image 4 & 5) ---
+  // --- 7. Curated Subscription Packages Section (Dynamically matching Website) ---
   Widget _buildSubscriptionPackagesSection(List<SubscriptionPackageModel> packages) {
+    if (packages.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // 1. Process dynamic packages & normalize category name matching web
+    String getNormalizedCategory(SubscriptionPackageModel p) {
+      final cat = p.category?.trim();
+      if (cat != null && cat.isNotEmpty) {
+        if (cat.toLowerCase() == 'cleaning') return 'Household & Cleaning';
+        return cat;
+      }
+      final bt = p.boxType.toLowerCase();
+      if (bt == 'cleaning') return 'Household & Cleaning';
+      if (bt == 'vegetable' || bt == 'vegetables') return 'Fresh Vegetables';
+      if (bt == 'fruits' || bt == 'fruit') return 'Organic Fruits';
+      if (p.boxType.isNotEmpty) {
+        return p.boxType.replaceAll('-', ' ').split(' ').map((word) {
+          if (word.isEmpty) return '';
+          return word[0].toUpperCase() + word.substring(1);
+        }).join(' ');
+      }
+      return 'Curated Box';
+    }
+
+    // 2. Distinct categories ordered by admin priority (pinned first, then lowest sortOrder)
+    final catMap = <String, ({bool isPinned, int minOrder})>{};
+    for (final pkg in packages) {
+      final cat = getNormalizedCategory(pkg);
+      final isPinned = pkg.isPinnedToHome;
+      final order = pkg.sortOrder;
+      if (!catMap.containsKey(cat)) {
+        catMap[cat] = (isPinned: isPinned, minOrder: order);
+      } else {
+        final existing = catMap[cat]!;
+        catMap[cat] = (
+          isPinned: existing.isPinned || isPinned,
+          minOrder: order < existing.minOrder ? order : existing.minOrder,
+        );
+      }
+    }
+
+    final availableCategories = catMap.keys.toList()
+      ..sort((a, b) {
+        final infoA = catMap[a]!;
+        final infoB = catMap[b]!;
+        if (infoA.isPinned != infoB.isPinned) {
+          return infoA.isPinned ? -1 : 1;
+        }
+        return infoA.minOrder.compareTo(infoB.minOrder);
+      });
+
+    if (availableCategories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Category Counts
+    final categoryCounts = <String, int>{};
+    for (final pkg in packages) {
+      final cat = getNormalizedCategory(pkg);
+      categoryCounts[cat] = (categoryCounts[cat] ?? 0) + 1;
+    }
+
+    // Default category selection
+    final activeTab = (_selectedSubCategory != null && availableCategories.contains(_selectedSubCategory))
+        ? _selectedSubCategory!
+        : availableCategories.first;
+
+    // Filter packages based on active category tab, sorted ascending by price
+    final displayedPackages = packages
+        .where((p) => getNormalizedCategory(p) == activeTab)
+        .toList()
+      ..sort((a, b) {
+        final priceA = a.salePrice ?? (a.subscriptionPrice > 0 ? a.subscriptionPrice : a.regularPrice);
+        final priceB = b.salePrice ?? (b.subscriptionPrice > 0 ? b.subscriptionPrice : b.regularPrice);
+        return priceA.compareTo(priceB);
+      });
+
     return Container(
       color: const Color(0xFFFAFCF8),
       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -830,301 +909,122 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // Category Tabs: [Household & Cleaning 3] [Organic Fruits 1]
+          // Dynamic Category Tabs matching website
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildSubTab('Household & Cleaning', 3),
-                const SizedBox(width: 8),
-                _buildSubTab('Organic Fruits', 1),
-                const SizedBox(width: 8),
-                _buildSubTab('Fresh Vegetables', 4),
-              ],
+              children: availableCategories.map((cat) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _buildSubTab(cat, categoryCounts[cat] ?? 0, activeTab == cat),
+                );
+              }).toList(),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // Detailed Subscription Box Card (Exact match to Image 4 & 5!)
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Card Top Banner with Overlay Pills & Title
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Stack(
-                    children: [
-                      Image.network(
-                        'https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=800&q=80',
-                        height: 160,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                      Container(
-                        height: 160,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.75),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Top Left Red Badge: বেসিক
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEA4335),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'বেসিক',
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ),
-                      // Top Right Purple Badge: 🔄 Every Month (1x)
-                      Positioned(
-                        top: 10,
-                        right: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4C1D95),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: const [
-                              Icon(Icons.repeat_rounded, size: 12, color: Colors.white),
-                              SizedBox(width: 4),
-                              Text(
-                                'Every Month (1x)',
-                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Bottom Overlay Title: HOUSEHOLD & CLEANING, বেসিক ফ্যামিলি প্ল্যান
-                      Positioned(
-                        bottom: 10,
-                        left: 12,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'HOUSEHOLD & CLEANING',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            Text(
-                              'বেসিক ফ্যামিলি প্ল্যান',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+          // Empty State or List of Package Cards
+          if (displayedPackages.isEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(Icons.inbox_outlined, size: 28, color: Color(0xFF94A3B8)),
                   ),
-                ),
-
-                // Card Details (Exact match to Image 5!)
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Price Row: ৳950 / month  ৳1000  Save 5%
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          const Text(
-                            '৳950',
-                            style: TextStyle(
-                              color: Color(0xFF1E293B),
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const Text(
-                            ' / month',
-                            style: TextStyle(
-                              color: Color(0xFF64748B),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            '৳1000',
-                            style: TextStyle(
-                              decoration: TextDecoration.lineThrough,
-                              color: Color(0xFF94A3B8),
-                              fontSize: 13,
-                            ),
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE8F5E1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'Save 5%',
-                              style: TextStyle(
-                                color: AppColors.primaryDark,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'দৈনন্দিন প্রয়োজনের সাশ্রয়ী প্যাকেজ',
-                        style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                      ),
-
-                      const Divider(height: 24, color: Color(0xFFE2E8F0)),
-
-                      // WHAT'S INSIDE Section
-                      const Text(
-                        'WHAT\'S INSIDE',
-                        style: TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Checklist of Items with green tick
-                      _buildCheckItem('গোসলের সাবান (৩টি)'),
-                      _buildCheckItem('টুথপেস্ট (১টি)'),
-                      _buildCheckItem('টুথব্রাশ (২টি)'),
-                      _buildCheckItem('টয়লেট টিস্যু (৪ রোল)'),
-                      _buildCheckItem('ডিশওয়াশ বার/লিকুইড (১টি)'),
-                      _buildCheckItem('কাপড় কাচার ডিটারজেন্ট (১ প্যাকেট)'),
-                      _buildCheckItem('হারপিক/টয়লেট ক্লিনার (১টি)'),
-                      _buildCheckItem('হ্যান্ডওয়াশ ১টি'),
-
-                      const SizedBox(height: 14),
-
-                      // Free doorstep delivery included pill
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F8EE),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: const [
-                            Icon(Icons.local_shipping_outlined, color: AppColors.primary, size: 16),
-                            SizedBox(width: 8),
-                            Text(
-                              'Free doorstep delivery included',
-                              style: TextStyle(
-                                color: Color(0xFF334155),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Subscribe Button
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 44),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: () {
-                          SnackbarUtils.showSuccess(
-                            context,
-                            'বেসিক ফ্যামিলি প্ল্যান সাবস্ক্রিপশনে যোগ করা হয়েছে!',
-                          );
-                        },
-                        child: const Text('Subscribe Now', style: TextStyle(fontWeight: FontWeight.w800)),
-                      ),
-                    ],
+                  const SizedBox(height: 12),
+                  const Text(
+                    'No Subscription Boxes Available',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF1E293B)),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  const Text(
+                    'There are currently no active subscription packages in this category. Please check back soon.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              itemCount: displayedPackages.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 18),
+              itemBuilder: (context, index) {
+                final pkg = displayedPackages[index];
+                final pinnedCount = displayedPackages.where((p) => p.isPinnedToHome).length;
+                final isFeatured = pinnedCount == 1
+                    ? pkg.isPinnedToHome
+                    : (index == 1 || (displayedPackages.length < 3 && index == 0));
+                return _buildSubscriptionPackageCard(pkg, isFeatured, getNormalizedCategory(pkg));
+              },
             ),
-          ),
+
+          const SizedBox(height: 24),
+
+          // Benefits Strip (Exact match to Website)
+          _buildBenefitsStrip(),
         ],
       ),
     );
   }
 
-  Widget _buildSubTab(String title, int count) {
-    final isSelected = _selectedSubCategory == title;
+  Widget _buildSubTab(String title, int count, bool isSelected) {
     return GestureDetector(
       onTap: () => setState(() => _selectedSubCategory = title),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               title,
               style: TextStyle(
                 color: isSelected ? Colors.white : const Color(0xFF475569),
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
               ),
             ),
             const SizedBox(width: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white.withValues(alpha: 0.3) : const Color(0xFFF1F5F9),
+                color: isSelected ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
@@ -1138,6 +1038,474 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionPackageCard(
+    SubscriptionPackageModel pkg,
+    bool isFeatured,
+    String categoryName,
+  ) {
+    final effectivePrice = (pkg.salePrice != null && pkg.salePrice! > 0)
+        ? pkg.salePrice!
+        : (pkg.subscriptionPrice > 0 ? pkg.subscriptionPrice : pkg.regularPrice);
+
+    final discount = pkg.discountPercent > 0
+        ? pkg.discountPercent
+        : (pkg.regularPrice > effectivePrice
+            ? (((pkg.regularPrice - effectivePrice) / pkg.regularPrice) * 100).round()
+            : 0);
+
+    final badgeText = pkg.badge?.isNotEmpty == true
+        ? pkg.badge!
+        : (discount > 0 ? '$discount% OFF' : 'Popular Choice');
+
+    final freqText = pkg.frequencyText?.isNotEmpty == true
+        ? pkg.frequencyText!
+        : (pkg.frequency.toLowerCase() == 'weekly' ? 'Every Week (1x)' : 'Every Month (1x)');
+
+    final cycle = pkg.frequency.toLowerCase() == 'weekly' ? 'week' : 'month';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isFeatured ? AppColors.primary : const Color(0xFFE2E8F0),
+          width: isFeatured ? 1.5 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Card Top Banner with Overlay Pills & Title
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            child: Stack(
+              children: [
+                pkg.thumbnail.isNotEmpty && pkg.thumbnail.startsWith('http')
+                    ? Image.network(
+                        pkg.thumbnail,
+                        height: 160,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildSubscriptionPlaceholderImage(),
+                      )
+                    : _buildSubscriptionPlaceholderImage(),
+                Container(
+                  height: 160,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.75),
+                      ],
+                    ),
+                  ),
+                ),
+                // Top Left Red Badge
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEA4335),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      badgeText,
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+                // Top Right Frequency Badge
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B).withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.repeat_rounded, size: 12, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(
+                          freqText,
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Bottom Overlay Title: CATEGORY & Name
+                Positioned(
+                  bottom: 10,
+                  left: 12,
+                  right: 12,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        categoryName.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        pkg.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Card Details
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Most Popular badge if featured
+                if (isFeatured) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.star, size: 11, color: AppColors.primary),
+                        SizedBox(width: 4),
+                        Text(
+                          'Most Popular',
+                          style: TextStyle(
+                            color: AppColors.primaryDark,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Price Row: ৳950 / month  ৳1000  Save 5%
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '৳${effectivePrice.toInt()}',
+                      style: const TextStyle(
+                        color: Color(0xFF1E293B),
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      ' / $cycle',
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (pkg.regularPrice > effectivePrice) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        '৳${pkg.regularPrice.toInt()}',
+                        style: const TextStyle(
+                          decoration: TextDecoration.lineThrough,
+                          color: Color(0xFF94A3B8),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                    const Spacer(),
+                    if (discount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Save $discount%',
+                          style: const TextStyle(
+                            color: AppColors.primaryDark,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                if (pkg.idealFor?.isNotEmpty == true || pkg.shortDescription?.isNotEmpty == true) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    pkg.idealFor ?? pkg.shortDescription!,
+                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                  ),
+                ],
+
+                const Divider(height: 24, color: Color(0xFFE2E8F0)),
+
+                // WHAT'S INSIDE Section
+                const Text(
+                  'WHAT\'S INSIDE',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Checklist of Items with green tick
+                if (pkg.items.isNotEmpty)
+                  ...pkg.items.map((it) {
+                    final qty = it.quantity?.trim();
+                    return _buildCheckItem(qty != null && qty.isNotEmpty ? '${it.itemName} ($qty)' : it.itemName);
+                  })
+                else if (pkg.shortDescription?.isNotEmpty == true)
+                  _buildCheckItem(pkg.shortDescription!)
+                else
+                  _buildCheckItem('Essential curated items included'),
+
+                const SizedBox(height: 14),
+
+                // Free doorstep delivery included pill
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F8EE),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.local_shipping_outlined, color: AppColors.primary, size: 16),
+                      SizedBox(width: 8),
+                      Text(
+                        'Free doorstep delivery included',
+                        style: TextStyle(
+                          color: Color(0xFF334155),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Subscribe Button
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 1,
+                  ),
+                  icon: const Icon(Icons.repeat_rounded, size: 16),
+                  label: const Text('Subscribe Now', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                  onPressed: () {
+                    SubscriptionSetupModal.show(context, pkg);
+                  },
+                ),
+
+                // Buy once Button
+                if (pkg.allowOneTimePurchase) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF334155),
+                      backgroundColor: const Color(0xFFF8FAFC),
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      minimumSize: const Size(double.infinity, 40),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.shopping_bag_outlined, size: 14, color: Color(0xFF64748B)),
+                    label: Text(
+                      'Buy once · ৳${pkg.regularPrice.toInt()}',
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                    ),
+                    onPressed: () {
+                      final product = ProductModel(
+                        id: pkg.id,
+                        name: pkg.name,
+                        regularPrice: pkg.regularPrice,
+                        salePrice: pkg.salePrice ?? pkg.regularPrice,
+                        thumbnail: pkg.thumbnail,
+                        shortDescription: pkg.shortDescription,
+                        categoryName: categoryName,
+                      );
+                      ref.read(cartNotifierProvider.notifier).addToCart(product, 1);
+                      SnackbarUtils.showSuccess(context, '${pkg.name} কার্টে যোগ করা হয়েছে!');
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionPlaceholderImage() {
+    return Container(
+      height: 160,
+      width: double.infinity,
+      color: const Color(0xFF1E293B),
+      child: const Center(
+        child: Icon(Icons.inventory_2_outlined, size: 48, color: Colors.white24),
+      ),
+    );
+  }
+
+  Widget _buildBenefitsStrip() {
+    final benefits = [
+      (
+        icon: Icons.calendar_today_rounded,
+        title: 'Automated Schedule',
+        text: 'Never worry about reordering essentials. Delivered to your door on time, every cycle.',
+      ),
+      (
+        icon: Icons.local_shipping_outlined,
+        title: '100% Free Delivery',
+        text: 'Every recurring subscription box ships free to your doorstep, always.',
+      ),
+      (
+        icon: Icons.pause_circle_outline_rounded,
+        title: 'Skip or Pause Anytime',
+        text: 'Travelling? Pause, skip or modify your delivery schedule in one click.',
+      ),
+    ];
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          ...benefits.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final b = entry.value;
+            return Column(
+              children: [
+                if (idx > 0) const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(b.icon, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              b.title,
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              b.text,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: Color(0xFF64748B),
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
+              border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.shield_outlined, size: 14, color: AppColors.primary),
+                SizedBox(width: 6),
+                Text(
+                  'Cancel anytime. No hidden charges, no lock-in.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1159,12 +1527,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            text,
-            style: const TextStyle(
-              color: Color(0xFF334155),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xFF334155),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -1470,279 +1840,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // --- Mobile Drawer (Exact replica of MobileNav.tsx in sobjihaat-frontend) ---
-  Widget _buildAppDrawer(BuildContext context, AsyncValue<HomeData> homeAsync) {
-    final wishlistState = ref.watch(wishlistProvider);
-    final categories = homeAsync.value?.categories ?? [];
-
-    return Drawer(
-      backgroundColor: Colors.white,
-      elevation: 24,
-      width: MediaQuery.of(context).size.width * 0.85,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Drawer Header: Menu Title, Have Complaint?, Close Button (matching MobileNav header)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 8, 14),
-              child: Row(
-                children: [
-                  const Text(
-                    'Menu',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  const Spacer(),
-                  // Have Complaint? Button
-                  InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _showComplaintModal(context);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.report_problem_outlined, size: 17, color: Color(0xFFEA580C)),
-                          SizedBox(width: 4),
-                          Text(
-                            'Have Complaint?',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFFEA580C),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Close Button
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 24, color: Color(0xFF475569)),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1, color: Color(0xFFF1F5F9)),
-
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                children: [
-                  // 1. Track Order with Live badge
-                  InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _showTrackOrderModal(context);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Text('🚚', style: TextStyle(fontSize: 16)),
-                          const SizedBox(width: 10),
-                          const Text(
-                            'Track Order',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'Live',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-
-                  // 2. My Orders
-                  InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      child: Row(
-                        children: const [
-                          Text('📦', style: TextStyle(fontSize: 16)),
-                          SizedBox(width: 10),
-                          Text(
-                            'My Orders',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF334155),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-
-                  // 3. My Wishlist with count badge
-                  InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const WishlistScreen()),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      child: Row(
-                        children: [
-                          const Text('❤️', style: TextStyle(fontSize: 16)),
-                          const SizedBox(width: 10),
-                          const Text(
-                            'My Wishlist',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF334155),
-                            ),
-                          ),
-                          const Spacer(),
-                          if (wishlistState.wishlistCount > 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEF4444),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${wishlistState.wishlistCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  const SizedBox(height: 12),
-
-                  // Categories Header
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                    child: Text(
-                      'CATEGORIES',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.grey.shade400,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-
-                  // Category items
-                  ...categories.map(
-                    (cat) => InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => CategoryProductsScreen(category: cat),
-                          ),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: Image.network(
-                                cat.image,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Center(
-                                  child: Text(
-                                    cat.name.isNotEmpty ? cat.name[0] : 'C',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                cat.name,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1E293B),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // --- User Profile Bottom Sheet (Matching MinHeader.tsx user menu) ---
   void _showUserMenuBottomSheet(BuildContext context, AuthState authState) {
     showModalBottomSheet(
@@ -1872,176 +1969,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           );
         }
       },
-    );
-  }
-
-  // --- Complaint Modal (Matching TopHeader.tsx / MobileNav Have Complaint?) ---
-  void _showComplaintModal(BuildContext context) {
-    final complaintController = TextEditingController();
-    final orderIdController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          top: 20,
-          left: 20,
-          right: 20,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.report_problem_rounded, color: Color(0xFFEA580C), size: 24),
-                const SizedBox(width: 8),
-                const Text(
-                  'Have a Complaint?',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.of(ctx).pop(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF7ED),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFFEDD5)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'Quick Support Helpline:',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFFC2410C)),
-                  ),
-                  SizedBox(height: 4),
-                  Text('📞 Phone: 01783176838   •   💬 WhatsApp: 01522114096', style: TextStyle(fontSize: 12, color: Color(0xFF9A3412))),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: orderIdController,
-              decoration: InputDecoration(
-                labelText: 'Order ID or Phone Number',
-                hintText: 'e.g. #ORD-1234 or 017...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                isDense: true,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: complaintController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: 'Complaint Description',
-                hintText: 'Tell us about the issue...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                isDense: true,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                SnackbarUtils.showSuccess(context, 'Complaint received! We will contact you shortly.');
-              },
-              child: const Text('SUBMIT COMPLAINT', style: TextStyle(fontWeight: FontWeight.w800)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- Track Order Modal (Matching MobileNav Track Order) ---
-  void _showTrackOrderModal(BuildContext context) {
-    final trackController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          top: 20,
-          left: 20,
-          right: 20,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                const Text('🚚', style: TextStyle(fontSize: 22)),
-                const SizedBox(width: 8),
-                const Text(
-                  'Track Your Order',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.of(ctx).pop(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: trackController,
-              decoration: InputDecoration(
-                labelText: 'Order Tracking Number or Phone',
-                hintText: 'Enter order number or phone...',
-                prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                isDense: true,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () {
-                final id = trackController.text.trim();
-                Navigator.of(ctx).pop();
-                if (id.isNotEmpty) {
-                  SnackbarUtils.showInfo(context, 'Tracking order: $id (Order is in transit)');
-                }
-              },
-              child: const Text('TRACK NOW', style: TextStyle(fontWeight: FontWeight.w800)),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

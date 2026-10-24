@@ -40,6 +40,9 @@ dependencies:
   shared_preferences: ^2.5.6
   google_fonts: ^9.0.0
   pinput: ^7.0.0
+  image_picker: ^1.2.4
+  url_launcher: ^6.3.3
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:

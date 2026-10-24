@@ -142,6 +142,38 @@ class OrderTimelineModel {
   }
 }
 
+class RiderModel {
+  final String? id;
+  final String? fullName;
+  final String? phone;
+  final String? vehicleType;
+  final String? vehicleNumber;
+  final double? rating;
+  final String? status;
+
+  RiderModel({
+    this.id,
+    this.fullName,
+    this.phone,
+    this.vehicleType,
+    this.vehicleNumber,
+    this.rating,
+    this.status,
+  });
+
+  factory RiderModel.fromJson(Map<String, dynamic> json) {
+    return RiderModel(
+      id: json['_id']?.toString(),
+      fullName: json['fullName']?.toString(),
+      phone: json['phone']?.toString(),
+      vehicleType: json['vehicleType']?.toString(),
+      vehicleNumber: json['vehicleNumber']?.toString(),
+      rating: (json['rating'] is num) ? (json['rating'] as num).toDouble() : null,
+      status: json['status']?.toString(),
+    );
+  }
+}
+
 class OrderModel {
   final String id;
   final String orderNumber;
@@ -154,6 +186,7 @@ class OrderModel {
   final double totalAmount;
   final String deliveryType;
   final OrderAddressModel? deliveryAddress;
+  final RiderModel? assignedRider;
   final DateTime? estimatedDelivery;
   final String paymentMethod;
   final String paymentStatus;
@@ -176,6 +209,7 @@ class OrderModel {
     required this.totalAmount,
     required this.deliveryType,
     this.deliveryAddress,
+    this.assignedRider,
     this.estimatedDelivery,
     required this.paymentMethod,
     required this.paymentStatus,
@@ -225,6 +259,9 @@ class OrderModel {
       deliveryType: json['deliveryType']?.toString() ?? 'local',
       deliveryAddress: json['deliveryAddress'] is Map<String, dynamic>
           ? OrderAddressModel.fromJson(json['deliveryAddress'])
+          : null,
+      assignedRider: json['assignedRider'] is Map<String, dynamic>
+          ? RiderModel.fromJson(json['assignedRider'])
           : null,
       estimatedDelivery: json['estimatedDelivery'] != null
           ? DateTime.tryParse(json['estimatedDelivery'].toString())

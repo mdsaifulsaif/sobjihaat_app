@@ -10,6 +10,7 @@ import '../../data/models/user_model.dart';
 import '../../../orders/presentation/screens/my_orders_screen.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
+import '../../../complaint/presentation/widgets/complaint_modal.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -1103,64 +1104,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _showComplaintDialog() {
-    final textController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: const [
-            Icon(Icons.report_problem_rounded, color: Colors.amber),
-            SizedBox(width: 8),
-            Text('Submit Complaint', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Tell us about any delivery issues, product freshness or app problems:',
-              style: TextStyle(fontSize: 12.5, color: Color(0xFF475569)),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: textController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Describe your issue here...',
-                hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              Navigator.pop(dialogCtx);
-              SnackbarUtils.showSuccess(
-                context,
-                'Thank you! Your complaint has been submitted to support team.',
-              );
-            },
-            child: const Text('Submit'),
-          ),
-        ],
-      ),
-    );
+    ComplaintModal.show(context);
   }
 }

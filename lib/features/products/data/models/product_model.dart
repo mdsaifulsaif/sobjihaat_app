@@ -1,7 +1,26 @@
+class ProductSpecification {
+  final String key;
+  final String value;
+
+  ProductSpecification({required this.key, required this.value});
+
+  factory ProductSpecification.fromJson(Map<String, dynamic> json) {
+    return ProductSpecification(
+      key: (json['key'] ?? '').toString(),
+      value: (json['value'] ?? '').toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {'key': key, 'value': value};
+}
+
 class ProductModel {
   final String id;
   final String name;
   final String? shortDescription;
+  final String? description;
+  final String? sku;
+  final String? productType;
   final double regularPrice;
   final double? salePrice;
   final int discountPercent;
@@ -13,11 +32,17 @@ class ProductModel {
   final String? categoryName;
   final bool isFeatured;
   final bool isOnSale;
+  final List<ProductSpecification> specifications;
+  final double rating;
+  final int numReviews;
 
   ProductModel({
     required this.id,
     required this.name,
     this.shortDescription,
+    this.description,
+    this.sku,
+    this.productType,
     required this.regularPrice,
     this.salePrice,
     this.discountPercent = 0,
@@ -29,6 +54,9 @@ class ProductModel {
     this.categoryName,
     this.isFeatured = false,
     this.isOnSale = false,
+    this.specifications = const [],
+    this.rating = 0.0,
+    this.numReviews = 0,
   });
 
   double get effectivePrice => (salePrice != null && salePrice! > 0 && salePrice! < regularPrice)
@@ -94,10 +122,23 @@ class ProductModel {
       return null;
     }
 
+    List<ProductSpecification> parseSpecifications(dynamic val) {
+      if (val is List) {
+        return val
+            .whereType<Map<String, dynamic>>()
+            .map((e) => ProductSpecification.fromJson(e))
+            .toList();
+      }
+      return [];
+    }
+
     return ProductModel(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
       name: (json['name'] ?? '').toString(),
       shortDescription: json['shortDescription'] as String?,
+      description: json['description'] as String?,
+      sku: json['sku']?.toString(),
+      productType: json['productType']?.toString() ?? 'Single',
       regularPrice: parseDouble(json['regularPrice']),
       salePrice: json['salePrice'] != null ? parseDouble(json['salePrice']) : null,
       discountPercent: parseInt(json['discountPercent']),
@@ -109,6 +150,9 @@ class ProductModel {
       categoryName: parseCategoryName(),
       isFeatured: json['isFeatured'] == true,
       isOnSale: json['isOnSale'] == true,
+      specifications: parseSpecifications(json['specifications']),
+      rating: parseDouble(json['rating']),
+      numReviews: parseInt(json['numReviews']),
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../orders/presentation/screens/my_orders_screen.dart';
+import '../../../orders/presentation/screens/track_order_screen.dart';
 
 class OrderSuccessScreen extends StatelessWidget {
   final String? orderId;
@@ -152,31 +153,8 @@ class OrderSuccessScreen extends StatelessWidget {
 
               const Spacer(flex: 2),
 
-              // View My Orders Button
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary, width: 1.5),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: const Icon(Icons.receipt_long_rounded, size: 20),
-                label: const Text(
-                  'View My Orders',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-
-              // Back to Home Button
-              ElevatedButton(
+              // Track Order Button (Primary)
+              ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -186,15 +164,61 @@ class OrderSuccessScreen extends StatelessWidget {
                   ),
                   elevation: 2,
                 ),
+                icon: const Icon(Icons.local_shipping_outlined, size: 20),
+                label: const Text(
+                  'Track Order',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => TrackOrderScreen(
+                        initialOrderNumber: orderId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+
+              // View My Orders Button
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF334155),
+                  side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                label: const Text(
+                  'View My Orders',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+
+              // Back to Home Button
+              TextButton(
                 onPressed: () {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
                 child: const Text(
                   'Continue Shopping',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
             ],
           ),
         ),

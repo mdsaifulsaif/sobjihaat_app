@@ -51,6 +51,13 @@ class ApiConstants {
   static const String whatsAppSupportNumber = '8801604321819';
   static const String whatsAppSupportUrl = 'https://wa.me/8801604321819';
 
+  // Complaint & Feedback
+  static const String complaints = '/complaints';
+
+  // Reviews Endpoints
+  static const String addReview = '/reviews/add-review';
+  static String productReviews(String productId) => '/reviews/$productId';
+
   // Request timeouts
   static const Duration connectTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 15);

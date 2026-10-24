@@ -78,11 +78,8 @@ class _CategoryProductsScreenState extends ConsumerState<CategoryProductsScreen>
         ref,
         currentIndex: 1, // Category active
         onTabSelected: (index) {
-          if (index == 0) {
-            Navigator.of(context).popUntil((route) => route.isFirst);
-          } else if (index == 1) {
-            Navigator.of(context).maybePop();
-          }
+          ref.read(bottomNavIndexProvider.notifier).setIndex(index);
+          Navigator.of(context).popUntil((route) => route.isFirst);
         },
       ),
       body: RefreshIndicator(

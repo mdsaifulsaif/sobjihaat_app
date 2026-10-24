@@ -6,32 +6,23 @@ import '../../../products/presentation/screens/wishlist_screen.dart';
 import 'categories_screen.dart';
 import 'home_screen.dart';
 
-class MainNavScreen extends ConsumerStatefulWidget {
+class MainNavScreen extends ConsumerWidget {
   const MainNavScreen({super.key});
 
   @override
-  ConsumerState<MainNavScreen> createState() => _MainNavScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentIndex = ref.watch(bottomNavIndexProvider);
 
-class _MainNavScreenState extends ConsumerState<MainNavScreen> {
-  int _currentIndex = 0;
-
-  void _onCategorySelected(String slug) {
-    setState(() => _currentIndex = 0);
-  }
-
-  @override
-  Widget build(BuildContext context) {
     final screens = [
       const HomeScreen(),
-      CategoriesScreen(onCategorySelected: _onCategorySelected),
-      WishlistScreen(onExplore: () => setState(() => _currentIndex = 0)),
+      const CategoriesScreen(),
+      WishlistScreen(onExplore: () => ref.read(bottomNavIndexProvider.notifier).setIndex(0)),
       const ProfileScreen(),
     ];
 
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
+        index: currentIndex,
         children: screens,
       ),
       // Floating Elevated Cart Button in Center (Image 1)
@@ -41,9 +32,9 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
       bottomNavigationBar: buildSobjiHaatBottomAppBar(
         context,
         ref,
-        currentIndex: _currentIndex,
+        currentIndex: currentIndex,
         onTabSelected: (index) {
-          setState(() => _currentIndex = index);
+          ref.read(bottomNavIndexProvider.notifier).setIndex(index);
         },
       ),
     );
