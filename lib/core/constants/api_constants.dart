@@ -7,15 +7,17 @@ class ApiConstants {
   /// Default local backend base URL based on device environment
   static String get defaultBaseUrl {
     if (kIsWeb) {
-      return 'http://localhost:5001/api/v1';
+      return 'https://sobji-hut-backend.vercel.app/api/v1';
     }
     if (Platform.isAndroid) {
       // 10.0.2.2 maps to host machine localhost in Android Emulator
-      return 'http://10.0.2.2:5001/api/v1';
+      return 'https://sobji-hut-backend.vercel.app/api/v1';
     }
     // iOS simulator, macOS, or others
-    return 'http://localhost:5001/api/v1';
+    return 'https://sobji-hut-backend.vercel.app/api/v1';
   }
+
+  // http://10.0.2.2:5001/api/v1
 
   // Auth Endpoints
   static const String login = '/auth/login';
