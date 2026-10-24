@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -126,12 +127,22 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<bool> signInWithGoogle() async {
     state = state.copyWith(status: AuthStatus.loading, clearError: true);
     try {
-      final googleSignIn = GoogleSignIn(
+      GoogleSignIn googleSignIn = GoogleSignIn(
         serverClientId: ApiConstants.googleClientId,
         scopes: ['email', 'profile'],
       );
 
-      final account = await googleSignIn.signIn();
+      GoogleSignInAccount? account;
+      try {
+        account = await googleSignIn.signIn();
+      } catch (e) {
+        // Fallback: try direct sign-in without serverClientId
+        googleSignIn = GoogleSignIn(
+          scopes: ['email', 'profile'],
+        );
+        account = await googleSignIn.signIn();
+      }
+
       if (account == null) {
         state = state.copyWith(status: AuthStatus.unauthenticated);
         return false;
@@ -174,6 +185,22 @@ class AuthNotifier extends Notifier<AuthState> {
       state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: e.message,
+      );
+      return false;
+    } on PlatformException catch (e) {
+      String msg = 'Google Sign-In failed.';
+      if (e.code == 'sign_in_failed' ||
+          (e.message?.contains('10') ?? false) ||
+          e.toString().contains('10')) {
+        msg = 'Google Sign-In config issue (ApiException 10): Android SHA-1 fingerprint needs to be added in Google Cloud Console.';
+      } else if (e.code == 'network_error') {
+        msg = 'Network error during Google Sign-In. Please check your internet connection.';
+      } else {
+        msg = e.message ?? e.toString();
+      }
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: msg,
       );
       return false;
     } catch (e) {

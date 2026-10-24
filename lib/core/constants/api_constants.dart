@@ -22,6 +22,8 @@ class ApiConstants {
   // Google OAuth Configuration
   static const String googleClientId =
       '901609629765-f54kn16mg02ofp0qptfm00fv2n96khlb.apps.googleusercontent.com';
+  static const String googleAndroidClientId =
+      '901609629765-t4osah5mevm4fb2pu67s8fgha2sd6eqd.apps.googleusercontent.com';
 
   // Auth Endpoints
   static const String login = '/auth/login';

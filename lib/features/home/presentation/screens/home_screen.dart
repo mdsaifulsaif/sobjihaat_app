@@ -41,13 +41,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _categoryScrollController = ScrollController();
   int _currentBannerIndex = 0;
   String? _selectedSubCategory;
+  Timer? _bannerTimer;
+  int _bannerCount = 0;
 
   @override
   void dispose() {
+    _bannerTimer?.cancel();
     _searchController.dispose();
     _bannerPageController.dispose();
     _categoryScrollController.dispose();
     super.dispose();
+  }
+
+  void _startBannerAutoSlide(int count) {
+    if (count <= 1) return;
+    if (_bannerCount == count && _bannerTimer != null && _bannerTimer!.isActive) return;
+    _bannerCount = count;
+    _bannerTimer?.cancel();
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!_bannerPageController.hasClients) return;
+      final currentPage = _bannerPageController.page?.round() ?? _currentBannerIndex;
+      final nextPage = (currentPage + 1) % count;
+      _bannerPageController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+    });
   }
 
   void _scrollCategories(bool forward) {
@@ -234,59 +254,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=800&q=80',
           ];
 
+    _startBannerAutoSlide(bannerImages.length);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 14),
-      height: 175,
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: PageView.builder(
-              controller: _bannerPageController,
-              itemCount: bannerImages.length,
-              onPageChanged: (idx) => setState(() => _currentBannerIndex = idx),
-              itemBuilder: (context, idx) {
-                return Image.network(
-                  bannerImages[idx],
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: const Color(0xFFEBF5E1),
-                    child: const Center(
-                      child: Icon(Icons.eco_rounded, size: 48, color: AppColors.primary),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          // Banner Indicators overlay (Matching Image 1: - . .)
-          Positioned(
-            bottom: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.35),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(
-                  bannerImages.length,
-                  (i) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: _currentBannerIndex == i ? 18 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: _currentBannerIndex == i ? Colors.white : Colors.white.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
+      child: AspectRatio(
+        aspectRatio: 800 / 275,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: PageView.builder(
+            controller: _bannerPageController,
+            itemCount: bannerImages.length,
+            onPageChanged: (idx) => setState(() => _currentBannerIndex = idx),
+            itemBuilder: (context, idx) {
+              return Image.network(
+                bannerImages[idx],
+                fit: BoxFit.fill,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: const Color(0xFFEBF5E1),
+                  child: const Center(
+                    child: Icon(Icons.eco_rounded, size: 48, color: AppColors.primary),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
   }
