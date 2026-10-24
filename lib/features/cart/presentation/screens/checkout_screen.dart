@@ -522,130 +522,199 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Section 3: Delivery Time (Local only)
+                      // Section 3: Delivery Time (Compact & Elegant)
                       if (_deliveryType == 'local') ...[
-                        _buildSectionCard(
-                          icon: Icons.access_time_rounded,
-                          title: 'Delivery Time',
-                          subtitle: 'আপনার অর্ডার কখন ডেলিভারি চান?',
-                          children: [
-                            // Normal vs Pre-order tabs
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildTimeModeButton(
-                                    mode: 'normal',
-                                    label: 'Normal Order',
-                                    sub: ' যত দ্রুত সম্ভব (ASAP)',
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: _buildTimeModeButton(
-                                    mode: 'preorder',
-                                    label: 'Pre-order',
-                                    sub: 'আগামীকাল ডেলিভারি',
-                                    badge: 'Tomorrow',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Custom time toggle
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.02),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
-                              child: Column(
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header
+                              Row(
                                 children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'নির্দিষ্ট সময়ে ডেলিভারি চান?',
-                                            style: TextStyle(
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: Color(0xFF0F172A),
-                                            ),
-                                          ),
-                                          Text(
-                                            _orderMode == 'preorder'
-                                                ? 'না দিলে আগামীকাল সুবিধাজনক সময়ে ডেলিভারি হবে'
-                                                : 'না দিলে যত দ্রুত সম্ভব ডেলিভারি হবে',
-                                            style: const TextStyle(
-                                              fontSize: 10.5,
-                                              color: Color(0xFF64748B),
-                                            ),
-                                          ),
-                                        ],
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(Icons.access_time_rounded, size: 15, color: AppColors.primary),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Delivery Time',
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Text(
+                                    '• কখন ডেলিভারি চান?',
+                                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+
+                              // Segmented Options: Normal vs Pre-order
+                              Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildTimeModeButton(
+                                        mode: 'normal',
+                                        icon: Icons.bolt_rounded,
+                                        label: 'Normal (ASAP)',
+                                        sub: 'যত দ্রুত সম্ভব',
                                       ),
-                                      Switch(
-                                        value: _wantsCustomTime,
-                                        activeThumbColor: Colors.white,
-                                        activeTrackColor: AppColors.primary,
-                                        onChanged: (val) {
-                                          setState(() {
-                                            _wantsCustomTime = val;
-                                            if (!val) _selectedCustomTime = null;
-                                          });
-                                        },
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: _buildTimeModeButton(
+                                        mode: 'preorder',
+                                        icon: Icons.calendar_today_rounded,
+                                        label: 'Pre-order',
+                                        sub: 'আগামীকাল ডেলিভারি',
+                                        badge: 'Tomorrow',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+
+                              // Slim inline toggle for specific delivery time
+                              InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _wantsCustomTime = !_wantsCustomTime;
+                                    if (!_wantsCustomTime) _selectedCustomTime = null;
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: _wantsCustomTime
+                                        ? AppColors.primary.withValues(alpha: 0.05)
+                                        : const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: _wantsCustomTime
+                                          ? AppColors.primary.withValues(alpha: 0.3)
+                                          : const Color(0xFFE2E8F0),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.schedule_rounded,
+                                        size: 14,
+                                        color: _wantsCustomTime ? AppColors.primary : const Color(0xFF64748B),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              'নির্দিষ্ট সময়ে ডেলিভারি চান?',
+                                              style: TextStyle(
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: _wantsCustomTime ? AppColors.primaryDark : const Color(0xFF334155),
+                                              ),
+                                            ),
+                                            Text(
+                                              _wantsCustomTime
+                                                  ? 'নিচের সুবিধাজনক সময় সিলেক্ট করুন'
+                                                  : 'না দিলে সুবিধাজনক সময়ে দ্রুত ডেলিভারি হবে',
+                                              style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Transform.scale(
+                                        scale: 0.72,
+                                        child: Switch(
+                                          value: _wantsCustomTime,
+                                          activeThumbColor: Colors.white,
+                                          activeTrackColor: AppColors.primary,
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          onChanged: (val) {
+                                            setState(() {
+                                              _wantsCustomTime = val;
+                                              if (!val) _selectedCustomTime = null;
+                                            });
+                                          },
+                                        ),
                                       ),
                                     ],
                                   ),
-                                  if (_wantsCustomTime) ...[
-                                    const SizedBox(height: 10),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: [
-                                        '09:00 AM - 11:00 AM',
-                                        '11:00 AM - 01:00 PM',
-                                        '02:00 PM - 04:00 PM',
-                                        '04:00 PM - 06:00 PM',
-                                      ].map((timeSlot) {
-                                        final isSelected = _selectedCustomTime == timeSlot;
-                                        return InkWell(
-                                          onTap: () => setState(() => _selectedCustomTime = timeSlot),
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 6,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: isSelected ? AppColors.primary : Colors.white,
-                                              borderRadius: BorderRadius.circular(8),
-                                              border: Border.all(
-                                                color: isSelected
-                                                    ? AppColors.primary
-                                                    : const Color(0xFFCBD5E1),
-                                              ),
-                                            ),
-                                            child: Text(
-                                              timeSlot,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w700,
-                                                color: isSelected ? Colors.white : const Color(0xFF334155),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ],
-                                ],
+                                ),
                               ),
-                            ),
-                          ],
+
+                              // Time slots if toggled
+                              if (_wantsCustomTime) ...[
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: [
+                                    '09:00 AM - 11:00 AM',
+                                    '11:00 AM - 01:00 PM',
+                                    '02:00 PM - 04:00 PM',
+                                    '04:00 PM - 06:00 PM',
+                                  ].map((timeSlot) {
+                                    final isSelected = _selectedCustomTime == timeSlot;
+                                    return InkWell(
+                                      onTap: () => setState(() => _selectedCustomTime = timeSlot),
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: isSelected ? AppColors.primary : Colors.white,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: isSelected ? AppColors.primary : const Color(0xFFCBD5E1),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          timeSlot,
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: isSelected ? Colors.white : const Color(0xFF334155),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -942,6 +1011,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Widget _buildTimeModeButton({
     required String mode,
+    required IconData icon,
     required String label,
     required String sub,
     String? badge,
@@ -949,53 +1019,85 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final isSelected = _orderMode == mode;
     return InkWell(
       onTap: () => setState(() => _orderMode = mode),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.06) : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
-            width: isSelected ? 1.5 : 1.0,
-          ),
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
+          border: isSelected ? Border.all(color: AppColors.primary, width: 1.2) : null,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
-                    color: isSelected ? AppColors.primary : const Color(0xFF0F172A),
-                  ),
-                ),
-                if (badge != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      badge,
-                      style: const TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-              ],
+            Icon(
+              icon,
+              size: 15,
+              color: isSelected ? AppColors.primary : const Color(0xFF64748B),
             ),
-            const SizedBox(height: 2),
-            Text(
-              sub,
-              style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            color: isSelected ? AppColors.primaryDark : const Color(0xFF334155),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (badge != null) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F5E1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            badge,
+                            style: const TextStyle(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  Text(
+                    sub,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w500,
+                      color: isSelected ? AppColors.primary : const Color(0xFF64748B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
