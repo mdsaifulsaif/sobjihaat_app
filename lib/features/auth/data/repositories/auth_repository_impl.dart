@@ -82,6 +82,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<String> resetPassword({required String token, required String newPassword}) async {
+    return await remoteDataSource.resetPassword(token: token, newPassword: newPassword);
+  }
+
+  @override
   Future<UserModel?> checkCurrentUser() async {
     final token = await storageService.getAccessToken();
     if (token == null || token.isEmpty) {

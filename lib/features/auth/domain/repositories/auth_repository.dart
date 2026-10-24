@@ -13,6 +13,7 @@ abstract class AuthRepository {
   Future<AuthResponse> verifyEmail({required String email, required String code});
   Future<String> resendVerificationEmail({required String email});
   Future<String> forgotPassword({required String email});
+  Future<String> resetPassword({required String token, required String newPassword});
   Future<UserModel?> checkCurrentUser();
   Future<UserModel> updateProfile({
     String? firstName,

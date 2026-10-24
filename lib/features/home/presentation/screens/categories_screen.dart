@@ -5,6 +5,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/sobjihaat_drawer.dart';
 import '../../../../core/widgets/sobjihaat_header.dart';
 import '../../../products/presentation/screens/category_products_screen.dart';
+import '../../../products/presentation/screens/search_screen.dart';
 import '../../data/models/category_model.dart';
 import '../providers/categories_provider.dart';
 
@@ -19,7 +20,6 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
-  String _searchQuery = '';
 
   @override
   void initState() {
@@ -32,9 +32,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     // Auto load more data when user scrolls within 250px of bottom
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 250) {
-      if (_searchQuery.isEmpty) {
-        ref.read(categoriesNotifierProvider.notifier).loadMore();
-      }
+      ref.read(categoriesNotifierProvider.notifier).loadMore();
     }
   }
 
@@ -48,14 +46,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     final catState = ref.watch(categoriesNotifierProvider);
-
     final allCategories = catState.categories;
-    final filteredCategories = _searchQuery.isEmpty
-        ? allCategories
-        : allCategories
-            .where((c) =>
-                c.name.toLowerCase().contains(_searchQuery.toLowerCase()))
-            .toList();
 
     return Scaffold(
       key: _scaffoldKey,
@@ -65,9 +56,18 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
         preferredSize: const Size.fromHeight(118),
         child: SobjiHaatHeader(
           searchController: _searchController,
-          onSearchChanged: (val) => setState(() => _searchQuery = val.trim()),
-          hintText: 'Search categories...',
+          hintText: 'Search products, categories...',
           onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+          onSearchSubmitted: (q) {
+            final query = q.trim();
+            if (query.isNotEmpty) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SearchScreen(initialQuery: query),
+                ),
+              );
+            }
+          },
         ),
       ),
       body: catState.isLoading && allCategories.isEmpty
@@ -88,7 +88,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'ALL CATEGORIES (${catState.totalCount > 0 ? catState.totalCount : filteredCategories.length})',
+                        'ALL CATEGORIES (${catState.totalCount > 0 ? catState.totalCount : allCategories.length})',
                         style: AppTypography.bodySmall.copyWith(
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
@@ -100,17 +100,17 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                   const SizedBox(height: 12),
 
                   // Categories 3-column Grid
-                  if (filteredCategories.isEmpty && !catState.isLoading)
+                  if (allCategories.isEmpty && !catState.isLoading)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 48),
                       child: Center(
                         child: Column(
                           children: const [
-                            Icon(Icons.search_off_rounded,
+                            Icon(Icons.category_outlined,
                                 size: 48, color: Color(0xFF94A3B8)),
                             SizedBox(height: 12),
                             Text(
-                              'No categories found',
+                              'No categories available',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -132,9 +132,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                         crossAxisSpacing: 12,
                         childAspectRatio: 0.82,
                       ),
-                      itemCount: filteredCategories.length,
+                      itemCount: allCategories.length,
                       itemBuilder: (context, index) {
-                        final cat = filteredCategories[index];
+                        final cat = allCategories[index];
                         return _buildCategoryCard(cat);
                       },
                     ),

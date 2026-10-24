@@ -34,6 +34,9 @@ abstract class ProductRemoteDataSource {
     int page = 1,
     int limit = 12,
     String? sort,
+    String? filter,
+    String? productType,
+    String? brand,
   });
 }
 
@@ -115,6 +118,9 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
     int page = 1,
     int limit = 12,
     String? sort,
+    String? filter,
+    String? productType,
+    String? brand,
   }) async {
     try {
       final queryParams = <String, dynamic>{
@@ -124,6 +130,15 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
       };
       if (searchTerm.trim().isNotEmpty) {
         queryParams['searchTerm'] = searchTerm.trim();
+      }
+      if (filter == 'featured') {
+        queryParams['isFeatured'] = 'true';
+      }
+      if (productType != null && productType.trim().isNotEmpty) {
+        queryParams['productType'] = productType.trim();
+      }
+      if (brand != null && brand.trim().isNotEmpty) {
+        queryParams['brand'] = brand.trim();
       }
       if (sort != null && sort.isNotEmpty) {
         queryParams['sort'] = sort;

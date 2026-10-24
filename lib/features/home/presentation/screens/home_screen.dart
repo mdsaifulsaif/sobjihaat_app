@@ -11,10 +11,8 @@ import '../../../auth/presentation/screens/profile_screen.dart';
 import '../../../orders/presentation/screens/my_orders_screen.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../products/data/models/product_model.dart';
-import '../../../products/presentation/providers/wishlist_provider.dart';
 import '../../../products/presentation/screens/category_products_screen.dart';
 import '../../../products/presentation/screens/search_screen.dart';
-import '../../../products/presentation/screens/wishlist_screen.dart';
 import '../../../products/presentation/widgets/product_card.dart';
 import '../../../products/presentation/widgets/product_quick_view_modal.dart';
 import '../../../subscriptions/data/models/subscription_package_model.dart';
@@ -24,7 +22,9 @@ import '../../data/models/brand_model.dart';
 import '../../data/models/category_model.dart';
 import '../providers/home_provider.dart';
 import 'categories_screen.dart';
+import 'brands_screen.dart';
 import '../../../../core/widgets/sobjihaat_drawer.dart';
+import '../../../../core/widgets/sobjihaat_header.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -65,7 +65,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final homeAsync = ref.watch(homeDataProvider);
     final cartState = ref.watch(cartNotifierProvider);
-    final wishlistState = ref.watch(wishlistProvider);
     final authState = ref.watch(authNotifierProvider);
 
     return Scaffold(
@@ -75,286 +74,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Top Fixed Header - Exact match to sobjihaat-frontend MinHeader.tsx
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(118),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1)),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + 6,
-            left: 14,
-            right: 14,
-            bottom: 8,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              // Row 1: Hamburger Menu, Green "S" logo + Brand Title, Wishlist with badge, Profile
-              Row(
-                children: [
-                  // Hamburger Menu (FiMenu)
-                  InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () {
-                      _scaffoldKey.currentState?.openDrawer();
-                    },
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.menu_rounded,
-                        color: Color(0xFF1E293B),
-                        size: 26,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Brand Logo & Name: Green rounded-2xl "S" + "SobjiHaat"
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'S',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      RichText(
-                        text: TextSpan(
-                          text: 'Sobji',
-                          style: const TextStyle(
-                            color: Color(0xFF0F172A),
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: 'Haat',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const Spacer(),
-
-                  // Wishlist Heart Outline Icon Button with Badge (FiHeart)
-                  InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const WishlistScreen()),
-                      );
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Icon(
-                            Icons.favorite_border_rounded,
-                            color: Color(0xFF334155),
-                            size: 24,
-                          ),
-                          if (wishlistState.wishlistCount > 0)
-                            Positioned(
-                              top: 2,
-                              right: 2,
-                              child: Container(
-                                padding: const EdgeInsets.all(3),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFEF4444),
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                                child: Center(
-                                  child: Text(
-                                    '${wishlistState.wishlistCount}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-
-                  // Profile User Button (FiUser)
-                  InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () {
-                      _showUserMenuBottomSheet(context, authState);
-                    },
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: authState.isAuthenticated && authState.user != null
-                            ? Text(
-                                authState.user!.firstName.isNotEmpty
-                                    ? authState.user!.firstName[0].toUpperCase()
-                                    : 'U',
-                                style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.person_outline_rounded,
-                                color: Color(0xFF475569),
-                                size: 20,
-                              ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Row 2: Search input field with rounded-3xl pill shape (exact match to MinHeader.tsx!)
-              Container(
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 16, right: 6),
-                        child: TextField(
-                          controller: _searchController,
-                          style: AppTypography.bodyMedium,
-                          decoration: InputDecoration(
-                            hintText: 'Search products, categories...',
-                            hintStyle: AppTypography.bodyMedium.copyWith(
-                              color: const Color(0xFF94A3B8),
-                              fontSize: 13,
-                            ),
-                            filled: false,
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            errorBorder: InputBorder.none,
-                            focusedErrorBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          onChanged: (_) => setState(() {}),
-                          onSubmitted: (val) {
-                            final q = val.trim();
-                            if (q.isNotEmpty) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SearchScreen(initialQuery: q),
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-
-                    // Clear button (if text entered) OR Green Search Button (if empty)
-                    if (_searchController.text.trim().isNotEmpty)
-                      GestureDetector(
-                        onTap: () => setState(() => _searchController.clear()),
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFE2E8F0),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            size: 16,
-                            color: Color(0xFF475569),
-                          ),
-                        ),
-                      )
-                    else
-                      GestureDetector(
-                        onTap: () {
-                          final q = _searchController.text.trim();
-                          if (q.isNotEmpty) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SearchScreen(initialQuery: q),
-                              ),
-                            );
-                          }
-                        },
-                        child: Container(
-                          width: 48,
-                          height: 36,
-                          margin: const EdgeInsets.only(right: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Center(
-                            child: Icon(Icons.search_rounded, color: Colors.white, size: 20),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        child: SobjiHaatHeader(
+          showBackButton: false,
+          onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+          onProfileTap: () => _showUserMenuBottomSheet(context, authState),
         ),
       ),
       body: homeAsync.when(
@@ -410,6 +133,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         title: 'Featured Products',
                         products: products,
                         cartState: cartState,
+                        interval: const Duration(milliseconds: 4800),
+                        initialDelay: const Duration(milliseconds: 1000),
+                        animationDuration: const Duration(milliseconds: 950),
+                        onSeeAll: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SearchScreen(
+                                customTitle: 'Featured Products',
+                                filter: 'featured',
+                              ),
+                            ),
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 22),
@@ -419,6 +155,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         title: 'Ready to Cook',
                         products: _getReadyToCookProducts(products),
                         cartState: cartState,
+                        interval: const Duration(milliseconds: 5600),
+                        initialDelay: const Duration(milliseconds: 2800),
+                        animationDuration: const Duration(milliseconds: 950),
+                        onSeeAll: () {
+                          final cat = categories.firstWhere(
+                            (c) =>
+                                c.slug.toLowerCase() == 'ready-to-cook' ||
+                                c.name.toLowerCase().contains('ready'),
+                            orElse: () => CategoryModel(
+                              id: '6ad6e2b5e4468851b28e1cb8',
+                              name: 'ready to cook',
+                              slug: 'ready-to-cook',
+                              image: '',
+                            ),
+                          );
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CategoryProductsScreen(category: cat),
+                            ),
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 22),
@@ -428,6 +185,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         title: 'Combo Products',
                         products: _getComboProducts(products),
                         cartState: cartState,
+                        interval: const Duration(milliseconds: 5200),
+                        initialDelay: const Duration(milliseconds: 4400),
+                        animationDuration: const Duration(milliseconds: 950),
+                        onSeeAll: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SearchScreen(
+                                customTitle: 'Combo Packs & Deals',
+                                productType: 'combo',
+                              ),
+                            ),
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 22),
@@ -695,11 +465,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // --- 3, 4, 5. Product Sliders with 3 Cards Visible! (Matching Images 2 & 3) ---
+  // --- 3, 4, 5. Product Sliders with 3 Cards Visible! (Staggered auto-slide matching professional apps) ---
   Widget _buildProductSliderSection({
     required String title,
     required List<ProductModel> products,
     required CartState cartState,
+    VoidCallback? onSeeAll,
+    Duration interval = const Duration(milliseconds: 5000),
+    Duration initialDelay = Duration.zero,
+    Duration animationDuration = const Duration(milliseconds: 950),
   }) {
     if (products.isEmpty) return const SizedBox.shrink();
 
@@ -708,38 +482,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       children: [
         _buildSectionHeader(
           title: title,
-          onSeeAll: () {
-            SnackbarUtils.showInfo(context, 'Viewing all $title products...');
-          },
+          onSeeAll: onSeeAll ??
+              () {
+                if (title.toLowerCase().contains('featured')) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SearchScreen(
+                        customTitle: 'Featured Products',
+                        filter: 'featured',
+                      ),
+                    ),
+                  );
+                } else if (title.toLowerCase().contains('combo')) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SearchScreen(
+                        customTitle: 'Combo Packs & Deals',
+                        productType: 'combo',
+                      ),
+                    ),
+                  );
+                } else {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+                  );
+                }
+              },
         ),
         const SizedBox(height: 10),
 
-        // Horizontal Slider: Exactly 3 Cards visible at a time!
-        SizedBox(
-          height: 195,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // Calculate width so exactly 3 cards fit with padding & spacing
-              final cardWidth = (constraints.maxWidth - 28 - (8 * 2)) / 3;
-
-              return ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  final prod = products[index];
-                  return Container(
-                    width: cardWidth,
-                    margin: const EdgeInsets.only(right: 8),
-                    child: ProductCard(
-                      product: prod,
-                      cartQuantity: cartState.getQuantity(prod.id),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
+        // Horizontal Slider: Exactly 3 Cards visible at a time, staggered auto-sliding 1 by 1
+        _AutoProductSlider(
+          products: products,
+          cartState: cartState,
+          interval: interval,
+          initialDelay: initialDelay,
+          animationDuration: animationDuration,
         ),
       ],
     );
@@ -758,7 +536,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       children: [
         _buildSectionHeader(
           title: 'Our Trusted Brands',
-          onSeeAll: () => SnackbarUtils.showInfo(context, 'Viewing all brands...'),
+          onSeeAll: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => BrandsScreen(initialBrands: brands),
+              ),
+            );
+          },
         ),
         const SizedBox(height: 8),
         _MarqueeBrandsTrack(brands: brands),
@@ -1973,6 +1757,134 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
+// --- Auto-sliding Product Carousel (Slides 1 card at a time, staggered like professional apps!) ---
+class _AutoProductSlider extends StatefulWidget {
+  final List<ProductModel> products;
+  final CartState cartState;
+  final Duration interval;
+  final Duration initialDelay;
+  final Duration animationDuration;
+
+  const _AutoProductSlider({
+    required this.products,
+    required this.cartState,
+    this.interval = const Duration(milliseconds: 5000),
+    this.initialDelay = Duration.zero,
+    this.animationDuration = const Duration(milliseconds: 950),
+  });
+
+  @override
+  State<_AutoProductSlider> createState() => _AutoProductSliderState();
+}
+
+class _AutoProductSliderState extends State<_AutoProductSlider> {
+  late final ScrollController _scrollController;
+  Timer? _initialTimer;
+  Timer? _timer;
+  bool _isUserInteracting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.initialDelay > Duration.zero) {
+        _initialTimer = Timer(widget.initialDelay, () {
+          if (!mounted) return;
+          _slideOneStep();
+          _startAutoSlide();
+        });
+      } else {
+        _startAutoSlide();
+      }
+    });
+  }
+
+  void _slideOneStep() {
+    if (!mounted || !_scrollController.hasClients || _isUserInteracting) return;
+    if (widget.products.length <= 3) return;
+
+    try {
+      final position = _scrollController.position;
+      if (!position.hasContentDimensions) return;
+
+      // Exactly 3 cards visible on screen: width = (viewportWidth - 28 - 16) / 3
+      final cardWidth = (position.viewportDimension - 28 - (8 * 2)) / 3;
+      final stepSize = cardWidth + 8;
+      final currentOffset = _scrollController.offset;
+      final maxExtent = position.maxScrollExtent;
+
+      if (currentOffset >= maxExtent - 5) {
+        // Smoothly animate back to start
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOutCubic,
+        );
+      } else {
+        // Slide forward one card at a time with smooth cubic transition
+        final nextOffset = (currentOffset + stepSize).clamp(0.0, maxExtent);
+        _scrollController.animateTo(
+          nextOffset,
+          duration: widget.animationDuration,
+          curve: Curves.easeOutCubic,
+        );
+      }
+    } catch (_) {}
+  }
+
+  void _startAutoSlide() {
+    _timer?.cancel();
+    _timer = Timer.periodic(widget.interval, (_) {
+      _slideOneStep();
+    });
+  }
+
+  @override
+  void dispose() {
+    _initialTimer?.cancel();
+    _timer?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 195,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cardWidth = (constraints.maxWidth - 28 - (8 * 2)) / 3;
+
+          return Listener(
+            onPointerDown: (_) => setState(() => _isUserInteracting = true),
+            onPointerUp: (_) => setState(() => _isUserInteracting = false),
+            onPointerCancel: (_) => setState(() => _isUserInteracting = false),
+            child: ListView.builder(
+              controller: _scrollController,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              itemCount: widget.products.length,
+              itemBuilder: (context, index) {
+                final prod = widget.products[index];
+                return Container(
+                  width: cardWidth,
+                  margin: const EdgeInsets.only(right: 8),
+                  child: ProductCard(
+                    product: prod,
+                    cartQuantity: widget.cartState.getQuantity(prod.id),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 // --- Smooth Continuous Auto-scrolling Marquee for Trusted Brands (Matching Image 2) ---
 class _MarqueeBrandsTrack extends StatefulWidget {
   final List<BrandModel> brands;
@@ -2052,33 +1964,57 @@ class _MarqueeBrandsTrackState extends State<_MarqueeBrandsTrack> {
               itemCount: marqueeList.length,
               itemBuilder: (context, index) {
                 final b = marqueeList[index];
-                return Container(
-                  width: cardWidth,
-                  margin: const EdgeInsets.only(right: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFF1F5F9)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x06000000),
-                        blurRadius: 4,
-                        offset: Offset(0, 1),
+                return InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    final brandSlug = b.slug.isNotEmpty
+                        ? b.slug
+                        : b.name.toLowerCase().replaceAll(' ', '-');
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => SearchScreen(
+                          customTitle: '${b.displayName} Products',
+                          brand: brandSlug,
+                        ),
                       ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Genuine Brand Logo (matching Image 2)
-                      Expanded(
-                        child: Center(
-                          child: b.logo.isNotEmpty
-                              ? Image.network(
-                                  b.logo,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) => Text(
+                    );
+                  },
+                  child: Container(
+                    width: cardWidth,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFF1F5F9)),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x06000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Genuine Brand Logo (matching Image 2)
+                        Expanded(
+                          child: Center(
+                            child: b.logo.isNotEmpty
+                                ? Image.network(
+                                    b.logo,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (context, error, stackTrace) => Text(
+                                      b.displayName.isNotEmpty ? b.displayName[0] : 'B',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
                                     b.displayName.isNotEmpty ? b.displayName[0] : 'B',
                                     style: const TextStyle(
                                       fontSize: 16,
@@ -2086,44 +2022,36 @@ class _MarqueeBrandsTrackState extends State<_MarqueeBrandsTrack> {
                                       color: AppColors.primary,
                                     ),
                                   ),
-                                )
-                              : Text(
-                                  b.displayName.isNotEmpty ? b.displayName[0] : 'B',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 3),
-                      // Brand Name (e.g. Colgate, Marks, Godraj)
-                      Text(
-                        b.displayName,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF1E293B),
+                        const SizedBox(height: 3),
+                        // Brand Name (e.g. Colgate, Marks, Godraj)
+                        Text(
+                          b.displayName,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF1E293B),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 1),
-                      // Product Count in green (e.g. "View Products", "2 Products", "1 Product")
-                      Text(
-                        b.countText,
-                        style: const TextStyle(
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                        const SizedBox(height: 1),
+                        // Product Count in green (e.g. "View Products", "2 Products", "1 Product")
+                        Text(
+                          b.countText,
+                          style: const TextStyle(
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },

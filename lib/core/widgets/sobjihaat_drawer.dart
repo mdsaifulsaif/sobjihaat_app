@@ -21,6 +21,9 @@ class SobjiHaatDrawer extends ConsumerWidget {
     return Drawer(
       backgroundColor: Colors.white,
       elevation: 24,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+      ),
       width: MediaQuery.of(context).size.width * 0.85,
       child: SafeArea(
         child: Column(

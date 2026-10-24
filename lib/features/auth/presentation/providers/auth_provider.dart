@@ -229,6 +229,37 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  /// Reset Password with token
+  Future<bool> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    try {
+      final message = await _repository.resetPassword(
+        token: token,
+        newPassword: newPassword,
+      );
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        successMessage: message,
+      );
+      return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: e.message,
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: 'Failed to reset password. Link may be invalid or expired.',
+      );
+      return false;
+    }
+  }
+
   /// Update user profile
   Future<bool> updateProfile({
     String? firstName,

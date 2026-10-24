@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/sobjihaat_bottom_bar.dart';
+import '../../../../core/widgets/sobjihaat_drawer.dart';
 import '../../../../core/widgets/sobjihaat_header.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../home/data/models/category_model.dart';
 import '../providers/category_products_provider.dart';
 import '../widgets/product_card.dart';
+import 'search_screen.dart';
 
 class CategoryProductsScreen extends ConsumerStatefulWidget {
   final CategoryModel category;
@@ -21,6 +23,7 @@ class CategoryProductsScreen extends ConsumerStatefulWidget {
 }
 
 class _CategoryProductsScreenState extends ConsumerState<CategoryProductsScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
 
@@ -58,15 +61,26 @@ class _CategoryProductsScreenState extends ConsumerState<CategoryProductsScreen>
     final cardAspectRatio = cardWidth / 195;
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const SobjiHaatDrawer(),
       backgroundColor: const Color(0xFFF8FAFC),
-      // 1. Fixed Top Header (SobjiHaat Brand Logo + Search Pill - Image 2)
+      // 1. Fixed Top Header (Exact match to SobjiHaat global topbar & web)
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(118),
         child: SobjiHaatHeader(
-          showBackButton: true,
-          onBackTap: () => Navigator.of(context).maybePop(),
           searchController: _searchController,
-          hintText: 'Search in ${widget.category.name}...',
+          hintText: 'Search products, categories...',
+          onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
+          onSearchSubmitted: (q) {
+            final query = q.trim();
+            if (query.isNotEmpty) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SearchScreen(initialQuery: query),
+                ),
+              );
+            }
+          },
         ),
       ),
       // 2. Fixed Center Elevated Shopping Bag Floating Button (Image 1)

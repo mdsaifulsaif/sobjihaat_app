@@ -51,10 +51,37 @@ class SearchProductsState {
   }
 }
 
-class SearchProductsNotifier extends Notifier<SearchProductsState> {
+class SearchQueryArgs {
   final String query;
+  final String? filter;
+  final String? productType;
+  final String? brand;
 
-  SearchProductsNotifier(this.query);
+  const SearchQueryArgs({
+    this.query = '',
+    this.filter,
+    this.productType,
+    this.brand,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SearchQueryArgs &&
+          runtimeType == other.runtimeType &&
+          query == other.query &&
+          filter == other.filter &&
+          productType == other.productType &&
+          brand == other.brand;
+
+  @override
+  int get hashCode => Object.hash(query, filter, productType, brand);
+}
+
+class SearchProductsNotifier extends Notifier<SearchProductsState> {
+  final SearchQueryArgs args;
+
+  SearchProductsNotifier(this.args);
 
   @override
   SearchProductsState build() {
@@ -67,7 +94,10 @@ class SearchProductsNotifier extends Notifier<SearchProductsState> {
     try {
       final dataSource = ref.read(productRemoteDataSourceProvider);
       final res = await dataSource.searchProducts(
-        searchTerm: query,
+        searchTerm: args.query,
+        filter: args.filter,
+        productType: args.productType,
+        brand: args.brand,
         page: 1,
         limit: 12,
       );
@@ -105,7 +135,10 @@ class SearchProductsNotifier extends Notifier<SearchProductsState> {
       final nextPage = state.page + 1;
       final dataSource = ref.read(productRemoteDataSourceProvider);
       final res = await dataSource.searchProducts(
-        searchTerm: query,
+        searchTerm: args.query,
+        filter: args.filter,
+        productType: args.productType,
+        brand: args.brand,
         page: nextPage,
         limit: 12,
       );
@@ -135,6 +168,6 @@ class SearchProductsNotifier extends Notifier<SearchProductsState> {
 }
 
 final searchProductsProvider =
-    NotifierProvider.autoDispose.family<SearchProductsNotifier, SearchProductsState, String>(
+    NotifierProvider.autoDispose.family<SearchProductsNotifier, SearchProductsState, SearchQueryArgs>(
   (arg) => SearchProductsNotifier(arg),
 );

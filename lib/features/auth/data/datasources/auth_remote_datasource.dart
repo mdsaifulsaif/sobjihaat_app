@@ -17,6 +17,7 @@ abstract class AuthRemoteDataSource {
   Future<AuthResponse> verifyEmail({required String email, required String code});
   Future<String> resendVerificationEmail({required String email});
   Future<String> forgotPassword({required String email});
+  Future<String> resetPassword({required String token, required String newPassword});
   Future<UserModel> getMe();
   Future<UserModel> updateProfile({
     String? firstName,
@@ -122,6 +123,25 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
       final data = response.data as Map<String, dynamic>;
       return (data['message'] ?? 'Password reset link sent to your email.').toString();
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<String> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await dioClient.dio.post(
+        ApiConstants.resetPassword(token),
+        data: {
+          'newPassword': newPassword,
+        },
+      );
+      final data = response.data as Map<String, dynamic>;
+      return (data['message'] ?? 'Password reset successfully!').toString();
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }

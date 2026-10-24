@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/sobjihaat_bottom_bar.dart';
+import '../../../../core/widgets/sobjihaat_drawer.dart';
 import '../../../../core/widgets/sobjihaat_header.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../providers/search_products_provider.dart';
@@ -9,10 +10,18 @@ import '../widgets/product_card.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   final String initialQuery;
+  final String? filter;
+  final String? productType;
+  final String? brand;
+  final String? customTitle;
 
   const SearchScreen({
     super.key,
-    required this.initialQuery,
+    this.initialQuery = '',
+    this.filter,
+    this.productType,
+    this.brand,
+    this.customTitle,
   });
 
   @override
@@ -20,9 +29,17 @@ class SearchScreen extends ConsumerStatefulWidget {
 }
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _scrollController = ScrollController();
   late final TextEditingController _searchController;
   late String _currentQuery;
+
+  SearchQueryArgs get _currentArgs => SearchQueryArgs(
+        query: _currentQuery,
+        filter: _currentQuery.isNotEmpty ? null : widget.filter,
+        productType: _currentQuery.isNotEmpty ? null : widget.productType,
+        brand: _currentQuery.isNotEmpty ? null : widget.brand,
+      );
 
   @override
   void initState() {
@@ -45,13 +62,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
     if (currentScroll >= (maxScroll - 250)) {
-      ref.read(searchProductsProvider(_currentQuery).notifier).loadMore();
+      ref.read(searchProductsProvider(_currentArgs).notifier).loadMore();
     }
   }
 
   void _handleNewSearch(String query) {
     final trimmed = query.trim();
-    if (trimmed.isEmpty || trimmed == _currentQuery) return;
+    if (trimmed == _currentQuery) return;
     setState(() {
       _currentQuery = trimmed;
     });
@@ -59,7 +76,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(searchProductsProvider(_currentQuery));
+    final state = ref.watch(searchProductsProvider(_currentArgs));
     final cartState = ref.watch(cartNotifierProvider);
 
     // Calculate exact card dimensions identical to HomeScreen (height: 195, padding: 14, spacing: 8)
@@ -68,15 +85,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final cardAspectRatio = cardWidth / 195;
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const SobjiHaatDrawer(),
       backgroundColor: const Color(0xFFF8FAFC),
-      // 1. Fixed Top Header (SobjiHaat Brand Logo + Search Pill - Image 2)
+      // 1. Fixed Top Header (Exact match to SobjiHaat global topbar & web)
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(118),
         child: SobjiHaatHeader(
-          showBackButton: true,
-          onBackTap: () => Navigator.of(context).maybePop(),
           searchController: _searchController,
-          hintText: 'Search products, brands...',
+          hintText: 'Search products, categories...',
+          onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
           onSearchSubmitted: _handleNewSearch,
         ),
       ),
@@ -99,7 +117,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
-          await ref.read(searchProductsProvider(_currentQuery).notifier).refresh();
+          await ref.read(searchProductsProvider(_currentArgs).notifier).refresh();
         },
         child: _buildBody(state, cartState, cardAspectRatio),
       ),
@@ -145,7 +163,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   const SizedBox(height: 18),
                   ElevatedButton.icon(
                     onPressed: () {
-                      ref.read(searchProductsProvider(_currentQuery).notifier).refresh();
+                      ref.read(searchProductsProvider(_currentArgs).notifier).refresh();
                     },
                     icon: const Icon(Icons.refresh_rounded, size: 18),
                     label: const Text('Try Again'),
@@ -246,38 +264,72 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            'Results for: ',
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0F172A),
-                            ),
-                          ),
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
+                      if (_currentQuery.isNotEmpty)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Results for: ',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
                               ),
-                              child: Text(
-                                '"$_currentQuery"',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primary,
+                            ),
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                child: Text(
+                                  '"$_currentQuery"',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.primary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        )
+                      else
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              widget.filter == 'featured'
+                                  ? Icons.stars_rounded
+                                  : (widget.productType == 'combo'
+                                      ? Icons.layers_rounded
+                                      : (widget.brand != null
+                                          ? Icons.verified_rounded
+                                          : Icons.shopping_bag_rounded)),
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              widget.customTitle ??
+                                  (widget.filter == 'featured'
+                                      ? 'Featured Products'
+                                      : (widget.productType == 'combo'
+                                          ? 'Combo Packs & Deals'
+                                          : (widget.brand != null
+                                              ? '${widget.brand} Products'
+                                              : 'All Products'))),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
                       const SizedBox(height: 3),
                       Text(
                         '${state.total} ${state.total == 1 ? "Product" : "Products"} Found',
