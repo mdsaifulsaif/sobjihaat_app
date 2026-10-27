@@ -40,7 +40,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen>
     final cartState = ref.watch(cartNotifierProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,

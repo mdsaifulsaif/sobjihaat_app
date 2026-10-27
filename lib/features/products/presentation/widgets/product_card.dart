@@ -94,7 +94,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                     child: Container(
                       decoration: const BoxDecoration(
-                        color: Color(0xFFF8FAFC),
+                        color: Colors.white,
                         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                       ),
                       padding: const EdgeInsets.all(4),

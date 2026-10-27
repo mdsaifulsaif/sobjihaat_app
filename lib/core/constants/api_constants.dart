@@ -18,6 +18,7 @@ class ApiConstants {
   }
 
   // http://10.0.2.2:5001/api/v1
+  // https://sobji-hut-backend.vercel.app/api/v1
 
   // Google OAuth Configuration
   static const String googleClientId =

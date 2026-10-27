@@ -44,7 +44,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFFFBFCFA),
+      backgroundColor: Colors.white,
       drawer: const SobjiHaatDrawer(),
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(118),

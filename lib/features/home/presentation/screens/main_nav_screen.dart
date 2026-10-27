@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/sobjihaat_bottom_bar.dart';
+import '../../../../core/widgets/sobjihaat_drawer.dart';
+import '../../../../core/widgets/user_auth_bottom_sheet.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/screens/profile_screen.dart';
 import '../../../products/presentation/screens/wishlist_screen.dart';
 import 'categories_screen.dart';
 import 'home_screen.dart';
 
-class MainNavScreen extends ConsumerWidget {
+class MainNavScreen extends ConsumerStatefulWidget {
   const MainNavScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainNavScreen> createState() => _MainNavScreenState();
+}
+
+class _MainNavScreenState extends ConsumerState<MainNavScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  Widget build(BuildContext context) {
     final currentIndex = ref.watch(bottomNavIndexProvider);
 
     final screens = [
@@ -21,6 +31,9 @@ class MainNavScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: Colors.white,
+      drawer: const SobjiHaatDrawer(),
       body: IndexedStack(
         index: currentIndex,
         children: screens,
@@ -34,7 +47,18 @@ class MainNavScreen extends ConsumerWidget {
         ref,
         currentIndex: currentIndex,
         onTabSelected: (index) {
-          ref.read(bottomNavIndexProvider.notifier).setIndex(index);
+          if (index == 1) {
+            _scaffoldKey.currentState?.openDrawer();
+          } else if (index == 3) {
+            final authState = ref.read(authNotifierProvider);
+            if (!authState.isAuthenticated || authState.user == null) {
+              UserAuthBottomSheet.show(context, ref);
+            } else {
+              ref.read(bottomNavIndexProvider.notifier).setIndex(3);
+            }
+          } else {
+            ref.read(bottomNavIndexProvider.notifier).setIndex(index);
+          }
         },
       ),
     );

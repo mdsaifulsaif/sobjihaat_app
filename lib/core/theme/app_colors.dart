@@ -12,7 +12,7 @@ class AppColors {
   static const Color secondary = Color(0xFF4B5966); // Slate Gray
   static const Color accent = Color(0xFFFF6B6B); // Coral red accent
   static const Color discountBadge = Color(0xFFEA4335); // Vivid red for discounts & plan pills
-  static const Color surface = Color(0xFFF8FAFC); // Soft off-white surface
+  static const Color surface = Color(0xFFFFFFFF); // Pure white surface
   static const Color background = Color(0xFFFFFFFF); // Pure white
 
   // Text Colors

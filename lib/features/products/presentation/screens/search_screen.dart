@@ -87,7 +87,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: const SobjiHaatDrawer(),
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Colors.white,
       // 1. Fixed Top Header (Exact match to SobjiHaat global topbar & web)
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(118),

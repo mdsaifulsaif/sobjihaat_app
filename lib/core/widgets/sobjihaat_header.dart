@@ -3,14 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../../features/auth/presentation/providers/auth_provider.dart';
-import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/auth/presentation/screens/profile_screen.dart';
 import '../../features/products/data/models/product_model.dart';
 import '../../features/products/presentation/providers/category_products_provider.dart';
-import '../../features/products/presentation/providers/wishlist_provider.dart';
 import '../../features/products/presentation/screens/search_screen.dart';
-import '../../features/products/presentation/screens/wishlist_screen.dart';
 import '../../features/products/presentation/widgets/product_quick_view_modal.dart';
 
 class SobjiHaatHeader extends ConsumerStatefulWidget implements PreferredSizeWidget {
@@ -18,6 +13,7 @@ class SobjiHaatHeader extends ConsumerStatefulWidget implements PreferredSizeWid
   final VoidCallback? onBackTap;
   final VoidCallback? onMenuTap;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onNotificationTap;
   final TextEditingController? searchController;
   final ValueChanged<String>? onSearchChanged;
   final ValueChanged<String>? onSearchSubmitted;
@@ -30,6 +26,7 @@ class SobjiHaatHeader extends ConsumerStatefulWidget implements PreferredSizeWid
     this.onBackTap,
     this.onMenuTap,
     this.onProfileTap,
+    this.onNotificationTap,
     this.searchController,
     this.onSearchChanged,
     this.onSearchSubmitted,
@@ -309,7 +306,7 @@ class _SobjiHaatHeaderState extends ConsumerState<SobjiHaatHeader> {
         // Header: "SUGGESTIONS" | "X FOUND" (Matching Image)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          color: const Color(0xFFF8FAFC),
+          color: Colors.white,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -345,7 +342,7 @@ class _SobjiHaatHeaderState extends ConsumerState<SobjiHaatHeader> {
             separatorBuilder: (context, index) => const Divider(
               height: 1,
               thickness: 1,
-              color: Color(0xFFF8FAFC),
+              color: Color(0xFFF1F5F9),
             ),
             itemBuilder: (context, index) {
               final p = _suggestedProducts[index];
@@ -372,7 +369,7 @@ class _SobjiHaatHeaderState extends ConsumerState<SobjiHaatHeader> {
                         child: Container(
                           width: 44,
                           height: 44,
-                          color: const Color(0xFFF8FAFC),
+                          color: Colors.white,
                           child: p.thumbnail.isNotEmpty
                               ? Image.network(
                                   p.thumbnail,
@@ -464,7 +461,7 @@ class _SobjiHaatHeaderState extends ConsumerState<SobjiHaatHeader> {
           onTap: () => _handleSearchSubmit(query),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
-            color: const Color(0xFFFBFCFA),
+            color: Colors.white,
             alignment: Alignment.center,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -493,9 +490,6 @@ class _SobjiHaatHeaderState extends ConsumerState<SobjiHaatHeader> {
 
   @override
   Widget build(BuildContext context) {
-    final wishlistState = ref.watch(wishlistProvider);
-    final authState = ref.watch(authNotifierProvider);
-
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -517,151 +511,121 @@ class _SobjiHaatHeaderState extends ConsumerState<SobjiHaatHeader> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Row 1: Left icon (Back or Menu), Green "S" logo box, Wishlist, Profile avatar
+          // Row 1: Back Button (if enabled) + Brand Logo & Name (Left) + Notification Icon (Right)
           Row(
             children: [
-              // Hamburger 3-line Menu Button (Exact match to web & user screenshot)
-              Builder(
-                builder: (btnContext) => InkWell(
+              if (widget.showBackButton) ...[
+                InkWell(
                   borderRadius: BorderRadius.circular(10),
-                  onTap: () {
-                    if (widget.onMenuTap != null) {
-                      widget.onMenuTap!();
-                    } else {
-                      Scaffold.maybeOf(btnContext)?.openDrawer();
-                    }
-                  },
+                  onTap: widget.onBackTap ?? () => Navigator.of(context).maybePop(),
                   child: Container(
-                    width: 38,
-                    height: 38,
-                    alignment: Alignment.centerLeft,
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     child: const Icon(
-                      Icons.menu_rounded,
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 18,
                       color: Color(0xFF1E293B),
-                      size: 26,
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
+                const SizedBox(width: 8),
+              ],
 
-              // Brand Logo: Green rounded "S" Box (Exact match to user screenshot)
+              // Brand Logo + Name: Green rounded "S" Box + "ShodaiBari" (Matching web header)
               GestureDetector(
                 onTap: () {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'S',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'S',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 9),
+                    RichText(
+                      text: const TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Shodai',
+                            style: TextStyle(
+                              color: Color(0xFF1E293B),
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'Bari',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
               const Spacer(),
 
-              // Wishlist Heart Outline Icon Button with Badge (FiHeart)
+              // Notification Icon Button (Replacing Love & User profile)
               InkWell(
                 borderRadius: BorderRadius.circular(20),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const WishlistScreen()),
-                  );
-                },
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  alignment: Alignment.center,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(
-                        Icons.favorite_border_rounded,
-                        color: Color(0xFF334155),
-                        size: 24,
-                      ),
-                      if (wishlistState.wishlistCount > 0)
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFEF4444),
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                            child: Center(
-                              child: Text(
-                                '${wishlistState.wishlistCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-
-              // Profile User Avatar Button (Letter "M" or User Icon in grey box - Image 1)
-              InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: widget.onProfileTap ??
+                onTap: widget.onNotificationTap ??
                     () {
-                      if (authState.isAuthenticated) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                        );
-                      } else {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        );
-                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('No new notifications'),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
                     },
                 child: Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white,
+                    shape: BoxShape.circle,
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: Center(
-                    child: authState.isAuthenticated && authState.user != null
-                        ? Text(
-                            authState.user!.firstName.isNotEmpty
-                                ? authState.user!.firstName[0].toUpperCase()
-                                : 'U',
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.person_outline_rounded,
-                            color: Color(0xFF475569),
-                            size: 20,
-                          ),
+                  child: const Icon(
+                    Icons.notifications_none_rounded,
+                    color: Color(0xFF334155),
+                    size: 22,
                   ),
                 ),
               ),
@@ -676,7 +640,7 @@ class _SobjiHaatHeaderState extends ConsumerState<SobjiHaatHeader> {
               duration: const Duration(milliseconds: 200),
               height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: _isFocused ? AppColors.primary : const Color(0xFFE2E8F0),

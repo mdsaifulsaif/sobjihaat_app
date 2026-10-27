@@ -51,10 +51,12 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: const SobjiHaatDrawer(),
-      backgroundColor: AppColors.surface,
+      backgroundColor: Colors.white,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(118),
         child: SobjiHaatHeader(
+          showBackButton: true,
+          onBackTap: () => Navigator.of(context).maybePop(),
           searchController: _searchController,
           hintText: 'Search products, categories...',
           onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),

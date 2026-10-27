@@ -175,7 +175,7 @@ class _TrackOrderScreenState extends ConsumerState<TrackOrderScreen> {
     final recentOrders = orderState.orders.take(5).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,

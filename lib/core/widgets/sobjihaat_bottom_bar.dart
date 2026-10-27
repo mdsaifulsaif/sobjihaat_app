@@ -4,6 +4,8 @@ import '../theme/app_colors.dart';
 import '../../features/cart/presentation/providers/cart_provider.dart';
 import '../../features/cart/presentation/widgets/mini_cart_bottom_sheet.dart';
 import '../../features/products/presentation/providers/wishlist_provider.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
+import 'user_auth_bottom_sheet.dart';
 
 Widget buildSobjiHaatFloatingCartButton(BuildContext context, WidgetRef ref) {
   final cartState = ref.watch(cartNotifierProvider);
@@ -94,6 +96,21 @@ Widget buildSobjiHaatBottomAppBar(
   final wishlistState = ref.watch(wishlistProvider);
 
   void handleNav(int index) {
+    if (index == 1) {
+      if (onTabSelected != null) {
+        onTabSelected(1);
+      } else {
+        Scaffold.maybeOf(context)?.openDrawer();
+      }
+      return;
+    }
+    if (index == 3) {
+      final authState = ref.read(authNotifierProvider);
+      if (!authState.isAuthenticated || authState.user == null) {
+        UserAuthBottomSheet.show(context, ref);
+        return;
+      }
+    }
     if (onTabSelected != null) {
       onTabSelected(index);
       return;

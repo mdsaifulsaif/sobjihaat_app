@@ -354,9 +354,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: Container(
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: cat.image.isNotEmpty
@@ -624,7 +624,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       });
 
     return Container(
-      color: const Color(0xFFFAFCF8),
+      color: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
@@ -1263,7 +1263,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: const BoxDecoration(
-              color: Color(0xFFF8FAFC),
+              color: Colors.white,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
               border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
             ),
@@ -1403,7 +1403,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF8FAFC),
+                  color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                   border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
                 ),
@@ -1590,7 +1590,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFF8FAFC),
+                    color: Colors.white,
                     borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
                     border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
                   ),
