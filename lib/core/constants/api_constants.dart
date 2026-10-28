@@ -55,6 +55,7 @@ class ApiConstants {
   static String cancelOrder(String id) => '/order/cancel/$id';
   static String trackOrder(String id) => '/order/track/$id';
   static const String shippingPreview = '/shipping/preview';
+  static const String shippingLocal = '/shipping/local';
   static const String availableCoupons = '/coupons/available';
   static const String applyCoupon = '/coupons/apply';
 

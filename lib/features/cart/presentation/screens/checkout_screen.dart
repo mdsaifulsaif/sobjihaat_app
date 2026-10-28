@@ -6,6 +6,7 @@ import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
+import '../../../home/presentation/providers/home_provider.dart';
 import '../../data/models/area_model.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/available_coupons_bottom_sheet.dart';
@@ -107,8 +108,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     } catch (_) {
       if (mounted) {
+        final shippingConfig = ref.read(homeDataProvider).value?.shippingConfig;
+        final dynamicFee = shippingConfig?.getChargeForSubtotal(subtotal) ?? (subtotal >= 5000 ? 0.0 : 30.0);
         setState(() {
-          _shippingCharge = _deliveryType == 'local' ? (subtotal >= 1000 ? 0.0 : 60.0) : 120.0;
+          _shippingCharge = _deliveryType == 'local' ? dynamicFee : 120.0;
           _isLoadingAreas = false;
         });
       }
@@ -132,8 +135,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     } catch (_) {
       if (mounted) {
+        final shippingConfig = ref.read(homeDataProvider).value?.shippingConfig;
+        final dynamicFee = shippingConfig?.getChargeForSubtotal(subtotal) ?? (subtotal >= 5000 ? 0.0 : 30.0);
         setState(() {
-          _shippingCharge = _deliveryType == 'local' ? (subtotal >= 1000 ? 0.0 : 60.0) : 120.0;
+          _shippingCharge = _deliveryType == 'local' ? dynamicFee : 120.0;
           _isLoadingShipping = false;
         });
       }
@@ -818,9 +823,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // --- WIDGET HELPERS ---
 
   Widget _buildSmartUpsellNudge(double subtotal) {
-    final freeShippingThreshold = 1000.0;
+    final shippingConfig = ref.watch(homeDataProvider).value?.shippingConfig;
+    final freeShippingThreshold = (shippingConfig?.freeDeliveryThreshold ?? 5000).toDouble();
     final isFreeShipping = subtotal >= freeShippingThreshold;
-    final needed = (freeShippingThreshold - subtotal).toInt();
+    final needed = (freeShippingThreshold - subtotal).toInt().clamp(0, freeShippingThreshold.toInt());
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

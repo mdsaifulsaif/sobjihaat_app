@@ -24,6 +24,7 @@ import '../../data/models/category_model.dart';
 import '../providers/home_provider.dart';
 import 'categories_screen.dart';
 import 'brands_screen.dart';
+import '../widgets/delivery_charges_section.dart';
 import '../../../../core/widgets/sobjihaat_drawer.dart';
 import '../../../../core/widgets/sobjihaat_header.dart';
 
@@ -230,6 +231,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                       // 7. Curated Subscription Packages (Matching Image 4 & 5)
                       _buildSubscriptionPackagesSection(packages),
+
+                      const SizedBox(height: 24),
+
+                      // 8. Delivery Charges & Rates (Matching Web DeliveryCharges.tsx)
+                      DeliveryChargesSection(shippingConfig: data.shippingConfig),
                     ],
                   ),
                 ),
@@ -257,7 +263,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _startBannerAutoSlide(bannerImages.length);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 14),
+      margin: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: AspectRatio(
         aspectRatio: 800 / 275,
         child: ClipRRect(
@@ -271,7 +289,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 bannerImages[idx],
                 fit: BoxFit.fill,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  color: const Color(0xFFEBF5E1),
+                  color: Colors.white,
                   child: const Center(
                     child: Icon(Icons.eco_rounded, size: 48, color: AppColors.primary),
                   ),

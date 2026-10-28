@@ -7,6 +7,7 @@ import '../../data/models/area_model.dart';
 import '../../data/models/banner_model.dart';
 import '../../data/models/brand_model.dart';
 import '../../data/models/category_model.dart';
+import '../../data/models/shipping_tier_model.dart';
 
 final homeRemoteDataSourceProvider = Provider<HomeRemoteDataSource>((ref) {
   final dioClient = ref.watch(dioClientProvider);
@@ -20,6 +21,7 @@ class HomeData {
   final List<SubscriptionPackageModel> subscriptionPackages;
   final List<BrandModel> brands;
   final List<AreaModel> areas;
+  final ShippingConfigModel? shippingConfig;
 
   HomeData({
     this.banners = const [],
@@ -28,6 +30,7 @@ class HomeData {
     this.subscriptionPackages = const [],
     this.brands = const [],
     this.areas = const [],
+    this.shippingConfig,
   });
 }
 
@@ -62,6 +65,7 @@ final homeDataProvider = FutureProvider<HomeData>((ref) async {
     dataSource.getSubscriptionPackages().catchError((_) => <SubscriptionPackageModel>[]),
     safeGetBrands(),
     dataSource.getAreas().catchError((_) => <AreaModel>[]),
+    dataSource.getShippingConfig().catchError((_) => null),
   ]);
 
   final banners =
@@ -78,6 +82,7 @@ final homeDataProvider = FutureProvider<HomeData>((ref) async {
       (results[4] as List<dynamic>?)?.whereType<BrandModel>().toList() ?? BrandModel.fallbackBrands;
   final areas =
       (results[5] as List<dynamic>?)?.whereType<AreaModel>().toList() ?? <AreaModel>[];
+  final shippingConfig = results[6] as ShippingConfigModel?;
 
   return HomeData(
     banners: banners,
@@ -86,6 +91,7 @@ final homeDataProvider = FutureProvider<HomeData>((ref) async {
     subscriptionPackages: packages,
     brands: brands.isNotEmpty ? brands : BrandModel.fallbackBrands,
     areas: areas,
+    shippingConfig: shippingConfig,
   );
 });
 

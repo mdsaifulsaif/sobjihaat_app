@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/snackbar_utils.dart';
+import '../../../home/presentation/providers/home_provider.dart';
 import '../providers/cart_provider.dart';
 import '../screens/checkout_screen.dart';
 import 'available_coupons_bottom_sheet.dart';
@@ -76,8 +77,15 @@ class _MiniCartBottomSheetState extends ConsumerState<MiniCartBottomSheet> {
     final couponDiscount = cartState.couponDiscount;
     final totalPayable = cartState.totalPayable;
 
-    final isFreeShipping = subtotal >= 1000;
-    final neededForFreeShipping = (1000 - subtotal).toInt();
+    // Dynamically read shipping config cached from homeDataProvider (no extra API call)
+    final homeData = ref.watch(homeDataProvider).value;
+    final shippingConfig = homeData?.shippingConfig;
+    final freeThreshold = shippingConfig?.freeDeliveryThreshold ?? 5000;
+    final currentFee = shippingConfig?.getChargeForSubtotal(subtotal) ?? (subtotal >= freeThreshold ? 0.0 : 30.0);
+    final baseFee = shippingConfig?.baseShippingCharge.toInt() ?? 30;
+
+    final isFreeShipping = subtotal >= freeThreshold || currentFee == 0;
+    final neededForFreeShipping = (freeThreshold - subtotal).toInt().clamp(0, freeThreshold);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -152,7 +160,11 @@ class _MiniCartBottomSheetState extends ConsumerState<MiniCartBottomSheet> {
                         Row(
                           children: [
                             Text(
-                              isFreeShipping ? 'Shipping Fee: ৳0' : 'Shipping Fee: ৳60 (Free over ৳1000)',
+                              isFreeShipping
+                                  ? 'Shipping Fee: ৳0'
+                                  : (subtotal == 0
+                                      ? 'Shipping Fee: ৳$baseFee (Free over ৳$freeThreshold)'
+                                      : 'Shipping Fee: ৳${currentFee.toInt()} (Free over ৳$freeThreshold)'),
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,

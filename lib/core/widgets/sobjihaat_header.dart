@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../utils/snackbar_utils.dart';
 import '../../features/products/data/models/product_model.dart';
 import '../../features/products/presentation/providers/category_products_provider.dart';
 import '../../features/products/presentation/screens/search_screen.dart';
@@ -605,13 +606,7 @@ class _SobjiHaatHeaderState extends ConsumerState<SobjiHaatHeader> {
                 borderRadius: BorderRadius.circular(20),
                 onTap: widget.onNotificationTap ??
                     () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('No new notifications'),
-                          duration: Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                      SnackbarUtils.showInfo(context, 'No new notifications');
                     },
                 child: Container(
                   width: 38,

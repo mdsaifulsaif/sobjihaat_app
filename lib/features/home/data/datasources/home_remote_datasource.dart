@@ -8,6 +8,7 @@ import '../models/area_model.dart';
 import '../models/banner_model.dart';
 import '../models/brand_model.dart';
 import '../models/category_model.dart';
+import '../models/shipping_tier_model.dart';
 
 class PaginatedCategoriesResponse {
   final List<CategoryModel> categories;
@@ -37,6 +38,7 @@ abstract class HomeRemoteDataSource {
   Future<List<SubscriptionPackageModel>> getSubscriptionPackages();
   Future<List<BrandModel>> getBrands();
   Future<List<AreaModel>> getAreas();
+  Future<ShippingConfigModel?> getShippingConfig();
 }
 
 class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
@@ -237,6 +239,22 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
       throw ApiException.fromDioException(e);
     } catch (_) {
       return [];
+    }
+  }
+
+  @override
+  Future<ShippingConfigModel?> getShippingConfig() async {
+    try {
+      final response = await dioClient.dio.get(ApiConstants.shippingLocal);
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] is Map<String, dynamic>) {
+        return ShippingConfigModel.fromJson(data['data'] as Map<String, dynamic>);
+      }
+      return null;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    } catch (_) {
+      return null;
     }
   }
 }
