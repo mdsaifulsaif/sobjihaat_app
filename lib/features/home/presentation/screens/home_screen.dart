@@ -1386,7 +1386,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   List<ProductModel> _getComboProducts(List<ProductModel> all) {
-    return all.where((p) => p.isOnSale || p.hasDiscount).toList();
+    return all.where((p) => p.isCombo || p.isOnSale || p.hasDiscount).toList();
   }
 
   Widget _buildSearchOverlay(List<ProductModel> products, String query) {

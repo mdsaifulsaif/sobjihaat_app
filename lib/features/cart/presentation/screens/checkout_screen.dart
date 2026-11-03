@@ -42,6 +42,36 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _wantsCustomTime = false;
   String? _selectedCustomTime;
 
+  static const List<Map<String, dynamic>> _deliveryTimeSlots = [
+    {'label': '09:00 AM - 11:00 AM', 'startHour': 9, 'startMinute': 0},
+    {'label': '11:00 AM - 01:00 PM', 'startHour': 11, 'startMinute': 0},
+    {'label': '02:00 PM - 04:00 PM', 'startHour': 14, 'startMinute': 0},
+    {'label': '04:00 PM - 06:00 PM', 'startHour': 16, 'startMinute': 0},
+  ];
+
+  bool _isTimeSlotDisabled(String slotLabel) {
+    // If next day (pre-order), all slots are enabled
+    if (_orderMode == 'preorder') return false;
+
+    // Same day (normal order): check current time
+    final slot = _deliveryTimeSlots.firstWhere(
+      (s) => s['label'] == slotLabel,
+      orElse: () => const <String, dynamic>{},
+    );
+    if (slot.isEmpty) return false;
+
+    final now = DateTime.now();
+    final currentMinutes = now.hour * 60 + now.minute;
+    final slotStartMinutes = (slot['startHour'] as int) * 60 + (slot['startMinute'] as int);
+
+    return currentMinutes >= slotStartMinutes;
+  }
+
+  bool get _allTimeSlotsDisabled {
+    if (_orderMode == 'preorder') return false;
+    return _deliveryTimeSlots.every((s) => _isTimeSlotDisabled(s['label'] as String));
+  }
+
   bool _isSubmitting = false;
   bool _showItemsPreview = false;
 
@@ -67,6 +97,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _specialInstructionsController = TextEditingController();
     _couponInputController = TextEditingController();
 
+    // Read cached areas from HomeData so we don't call the API again
+    final cachedAreas = ref.read(homeDataProvider).value?.areas;
+    if (cachedAreas != null && cachedAreas.isNotEmpty) {
+      _areas = cachedAreas.where((a) => a.isActive).toList();
+      _isLoadingAreas = false;
+      if (_areas.isNotEmpty && _selectedAreaId == null) {
+        _selectedAreaId = _areas.first.id;
+      }
+    }
+
     _loadAreasAndShipping();
   }
 
@@ -88,9 +128,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _loadAreasAndShipping() async {
     final subtotal = ref.read(cartNotifierProvider).subtotal;
+    final dataSource = ref.read(cartRemoteDataSourceProvider);
+
+    // If areas were not already loaded from HomeData cache, load them as fallback
+    if (_areas.isEmpty) {
+      try {
+        final homeData = ref.read(homeDataProvider).value;
+        if (homeData != null && homeData.areas.isNotEmpty) {
+          _areas = homeData.areas.where((a) => a.isActive).toList();
+        } else {
+          final fetched = await dataSource.getAreas();
+          _areas = fetched.where((a) => a.isActive).toList();
+        }
+        if (_areas.isNotEmpty && _selectedAreaId == null) {
+          _selectedAreaId = _areas.first.id;
+        }
+      } catch (_) {}
+      if (mounted) {
+        setState(() => _isLoadingAreas = false);
+      }
+    }
+
     try {
-      final dataSource = ref.read(cartRemoteDataSourceProvider);
-      final areas = await dataSource.getAreas();
       final shipping = await dataSource.getShippingPreview(
         deliveryType: _deliveryType,
         subtotal: subtotal,
@@ -98,12 +157,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
       if (mounted) {
         setState(() {
-          _areas = areas;
-          if (_areas.isNotEmpty && _selectedAreaId == null) {
-            _selectedAreaId = _areas.first.id;
-          }
           _shippingCharge = shipping;
-          _isLoadingAreas = false;
         });
       }
     } catch (_) {
@@ -112,7 +166,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         final dynamicFee = shippingConfig?.getChargeForSubtotal(subtotal) ?? (subtotal >= 5000 ? 0.0 : 30.0);
         setState(() {
           _shippingCharge = _deliveryType == 'local' ? dynamicFee : 120.0;
-          _isLoadingAreas = false;
         });
       }
     }
@@ -686,23 +739,27 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 Wrap(
                                   spacing: 6,
                                   runSpacing: 6,
-                                  children: [
-                                    '09:00 AM - 11:00 AM',
-                                    '11:00 AM - 01:00 PM',
-                                    '02:00 PM - 04:00 PM',
-                                    '04:00 PM - 06:00 PM',
-                                  ].map((timeSlot) {
+                                  children: _deliveryTimeSlots.map((slot) {
+                                    final timeSlot = slot['label'] as String;
                                     final isSelected = _selectedCustomTime == timeSlot;
+                                    final isDisabled = _isTimeSlotDisabled(timeSlot);
+
                                     return InkWell(
-                                      onTap: () => setState(() => _selectedCustomTime = timeSlot),
+                                      onTap: isDisabled
+                                          ? null
+                                          : () => setState(() => _selectedCustomTime = timeSlot),
                                       borderRadius: BorderRadius.circular(8),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                                         decoration: BoxDecoration(
-                                          color: isSelected ? AppColors.primary : Colors.white,
+                                          color: isDisabled
+                                              ? const Color(0xFFF1F5F9)
+                                              : (isSelected ? AppColors.primary : Colors.white),
                                           borderRadius: BorderRadius.circular(8),
                                           border: Border.all(
-                                            color: isSelected ? AppColors.primary : const Color(0xFFCBD5E1),
+                                            color: isDisabled
+                                                ? const Color(0xFFE2E8F0)
+                                                : (isSelected ? AppColors.primary : const Color(0xFFCBD5E1)),
                                           ),
                                         ),
                                         child: Text(
@@ -710,13 +767,34 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           style: TextStyle(
                                             fontSize: 10.5,
                                             fontWeight: FontWeight.w700,
-                                            color: isSelected ? Colors.white : const Color(0xFF334155),
+                                            color: isDisabled
+                                                ? const Color(0xFF94A3B8)
+                                                : (isSelected ? Colors.white : const Color(0xFF334155)),
                                           ),
                                         ),
                                       ),
                                     );
                                   }).toList(),
                                 ),
+                                if (_allTimeSlotsDisabled) ...[
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEF3C7),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFFFDE68A)),
+                                    ),
+                                    child: const Text(
+                                      'আজকের জন্য সব নির্দিষ্ট সময় শেষ হয়ে গেছে। Pre-order (আগামীকাল) সিলেক্ট করে অগ্রিম সময় বুক করুন।',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF92400E),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ],
                           ),
@@ -1024,7 +1102,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }) {
     final isSelected = _orderMode == mode;
     return InkWell(
-      onTap: () => setState(() => _orderMode = mode),
+      onTap: () {
+        setState(() {
+          _orderMode = mode;
+          if (_selectedCustomTime != null && _isTimeSlotDisabled(_selectedCustomTime!)) {
+            _selectedCustomTime = null;
+          }
+        });
+      },
       borderRadius: BorderRadius.circular(8),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),

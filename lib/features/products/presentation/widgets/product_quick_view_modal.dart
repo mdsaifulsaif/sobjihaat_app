@@ -118,6 +118,10 @@ class _ProductQuickViewModalState extends ConsumerState<ProductQuickViewModal> {
   }
 
   Future<void> _handleWhatsAppOrder() async {
+    if (widget.product.stock <= 0) {
+      SnackbarUtils.showWarning(context, 'This product is currently out of stock');
+      return;
+    }
     const waNumber = ApiConstants.whatsAppSupportNumber;
     final inCartQty = ref.read(cartNotifierProvider).getQuantity(widget.product.id);
     final qty = inCartQty > 0 ? inCartQty : 1;
@@ -513,11 +517,13 @@ class _ProductQuickViewModalState extends ConsumerState<ProductQuickViewModal> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF25D366),
                       foregroundColor: Colors.white,
+                      disabledBackgroundColor: const Color(0xFFE2E8F0),
+                      disabledForegroundColor: const Color(0xFF94A3B8),
                       minimumSize: const Size(double.infinity, 48),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
-                    onPressed: _handleWhatsAppOrder,
+                    onPressed: inStock ? _handleWhatsAppOrder : null,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [

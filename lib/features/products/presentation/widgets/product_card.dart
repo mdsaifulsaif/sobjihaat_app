@@ -28,6 +28,10 @@ class _ProductCardState extends ConsumerState<ProductCard> {
   bool _isStepperOpen = false;
 
   void _handleAddToCart() {
+    if (widget.product.stock <= 0) {
+      SnackbarUtils.showWarning(context, 'This product is currently out of stock');
+      return;
+    }
     HapticFeedback.lightImpact();
     ref.read(cartNotifierProvider.notifier).addToCart(widget.product, 1);
     ref.read(wishlistProvider.notifier).addToRecentlyViewed(widget.product);
@@ -39,6 +43,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
   }
 
   void _handleIncrement() {
+    if (widget.product.stock <= 0) return;
     HapticFeedback.selectionClick();
     final current = ref.read(cartNotifierProvider).getQuantity(widget.product.id);
     ref.read(cartNotifierProvider.notifier).updateQuantity(widget.product.id, current + 1);
@@ -58,6 +63,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
+    final inStock = product.stock > 0;
     final wishlistState = ref.watch(wishlistProvider);
     final isWishlisted = wishlistState.isWishlisted(product.id);
     final cartState = ref.watch(cartNotifierProvider);
@@ -101,11 +107,14 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                       child: ClipRRect(
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                         child: product.thumbnail.isNotEmpty
-                            ? Image.network(
-                                product.thumbnail,
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) => const Center(
-                                  child: Icon(Icons.eco_rounded, color: AppColors.primary, size: 28),
+                            ? Opacity(
+                                opacity: inStock ? 1.0 : 0.55,
+                                child: Image.network(
+                                  product.thumbnail,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) => const Center(
+                                    child: Icon(Icons.eco_rounded, color: AppColors.primary, size: 28),
+                                  ),
                                 ),
                               )
                             : const Center(
@@ -116,8 +125,29 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                   ),
                 ),
 
-                // Top-Left: Discount Badge (e.g. 6% OFF / 20% OFF)
-                if (product.hasDiscount)
+                // Top-Left: Stock Out (Black badge as requested) or Discount Badge (Red badge)
+                if (!inStock)
+                  Positioned(
+                    top: 5,
+                    left: 5,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: const Text(
+                        'Stock Out',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  )
+                else if (product.hasDiscount)
                   Positioned(
                     top: 5,
                     left: 5,
@@ -176,119 +206,120 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                   ),
                 ),
 
-                // Bottom-Right: Add to Cart Button / Quantity Box (Matches Web Screenshot 2 & 3!)
-                Positioned(
-                  bottom: 4,
-                  right: 4,
-                  child: quantity == 0
-                      // Not in Cart: White squircle with green border and green plus '+'
-                      ? Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: _handleAddToCart,
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.primary, width: 1.8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
+                // Bottom-Right: Add to Cart Button / Quantity Box (Hidden if out of stock!)
+                if (inStock)
+                  Positioned(
+                    bottom: 4,
+                    right: 4,
+                    child: quantity == 0
+                        // Not in Cart: White squircle with green border and green plus '+'
+                        ? Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _handleAddToCart,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.primary, width: 1.8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.08),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.add,
+                                    color: AppColors.primary,
+                                    size: 19,
                                   ),
-                                ],
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.add,
-                                  color: AppColors.primary,
-                                  size: 19,
                                 ),
                               ),
                             ),
-                          ),
-                        )
-                      : _isStepperOpen
-                          // Stepper expanded: [-] [qty] [+]
-                          ? Container(
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.primary, width: 1.8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 5,
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  InkWell(
-                                    onTap: _handleDecrement,
-                                    child: const Padding(
-                                      padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                      child: Icon(Icons.remove, size: 15, color: AppColors.primary),
+                          )
+                        : _isStepperOpen
+                            // Stepper expanded: [-] [qty] [+]
+                            ? Container(
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.primary, width: 1.8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.1),
+                                      blurRadius: 5,
                                     ),
-                                  ),
-                                  Text(
-                                    '$quantity',
-                                    style: const TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                  InkWell(
-                                    onTap: _handleIncrement,
-                                    child: const Padding(
-                                      padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                      child: Icon(Icons.add, size: 15, color: AppColors.primary),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          // Already in Cart: Solid green squircle with white quantity number (Exact match to Image 3!)
-                          : Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () => setState(() => _isStepperOpen = true),
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    borderRadius: BorderRadius.circular(8),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.primary.withValues(alpha: 0.4),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    InkWell(
+                                      onTap: _handleDecrement,
+                                      child: const Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                        child: Icon(Icons.remove, size: 15, color: AppColors.primary),
                                       ),
-                                    ],
-                                  ),
-                                  child: Center(
-                                    child: Text(
+                                    ),
+                                    Text(
                                       '$quantity',
                                       style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
+                                        fontSize: 12.5,
                                         fontWeight: FontWeight.w800,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                    InkWell(
+                                      onTap: _handleIncrement,
+                                      child: const Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                        child: Icon(Icons.add, size: 15, color: AppColors.primary),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            // Already in Cart: Solid green squircle with white quantity number (Exact match to Image 3!)
+                            : Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () => setState(() => _isStepperOpen = true),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primary.withValues(alpha: 0.4),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '$quantity',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                ),
+                  ),
               ],
             ),
           ),

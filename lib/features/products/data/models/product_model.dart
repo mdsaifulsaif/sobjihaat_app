@@ -21,6 +21,7 @@ class ProductModel {
   final String? description;
   final String? sku;
   final String? productType;
+  final double? costPrice;
   final double regularPrice;
   final double? salePrice;
   final int discountPercent;
@@ -43,6 +44,7 @@ class ProductModel {
     this.description,
     this.sku,
     this.productType,
+    this.costPrice,
     required this.regularPrice,
     this.salePrice,
     this.discountPercent = 0,
@@ -59,16 +61,24 @@ class ProductModel {
     this.numReviews = 0,
   });
 
+  bool get isCombo => productType?.toLowerCase() == 'combo';
+
   double get effectivePrice => (salePrice != null && salePrice! > 0 && salePrice! < regularPrice)
       ? salePrice!
       : regularPrice;
 
-  bool get hasDiscount => (salePrice != null && salePrice! > 0 && salePrice! < regularPrice) || discountPercent > 0;
+  bool get hasDiscount =>
+      (salePrice != null && salePrice! > 0 && salePrice! < regularPrice) ||
+      discountPercent > 0 ||
+      (isCombo && costPrice != null && costPrice! > regularPrice);
 
   int get computedDiscountPercent {
     if (discountPercent > 0) return discountPercent;
     if (salePrice != null && salePrice! > 0 && salePrice! < regularPrice) {
       return (((regularPrice - salePrice!) / regularPrice) * 100).round();
+    }
+    if (isCombo && costPrice != null && costPrice! > regularPrice && regularPrice > 0) {
+      return (((costPrice! - regularPrice) / costPrice!) * 100).round();
     }
     return 0;
   }
@@ -139,6 +149,7 @@ class ProductModel {
       description: json['description'] as String?,
       sku: json['sku']?.toString(),
       productType: json['productType']?.toString() ?? 'Single',
+      costPrice: json['costPrice'] != null ? parseDouble(json['costPrice']) : null,
       regularPrice: parseDouble(json['regularPrice']),
       salePrice: json['salePrice'] != null ? parseDouble(json['salePrice']) : null,
       discountPercent: parseInt(json['discountPercent']),
