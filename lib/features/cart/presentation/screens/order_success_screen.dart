@@ -71,7 +71,7 @@ class OrderSuccessScreen extends StatelessWidget {
               const SizedBox(height: 8),
 
               Text(
-                'Thank you for ordering with SobjiHaat! Your fresh harvest is being prepared for swift delivery.',
+                'Thank you for ordering with Mojutmart! Your fresh harvest is being prepared for swift delivery.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,

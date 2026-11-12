@@ -37,7 +37,7 @@ class SobjiHaatApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ShobjiHaat',
+      title: 'Mojutmart',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: const SplashScreen(),

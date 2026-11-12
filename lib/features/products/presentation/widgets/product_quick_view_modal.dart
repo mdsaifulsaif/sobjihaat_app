@@ -129,7 +129,7 @@ class _ProductQuickViewModalState extends ConsumerState<ProductQuickViewModal> {
     final totalPrice = unitPrice * qty;
     final skuCode = widget.product.sku ?? widget.product.id;
 
-    String msg = "Hello! SobjiHaat, I'm interested in:\n";
+    String msg = "Hello! Mojutmart, I'm interested in:\n";
     msg += "Product: ${widget.product.name}\n";
     if (widget.product.unitName != null && widget.product.unitName!.isNotEmpty) {
       msg += "Unit: ${widget.product.weightOrVolume ?? ''} ${widget.product.unitName}\n";

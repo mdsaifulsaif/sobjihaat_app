@@ -55,7 +55,7 @@ class AppLogo extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Sobji',
+                        'Mojut',
                         style: AppTypography.displayMedium.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w800,
@@ -63,7 +63,7 @@ class AppLogo extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Haat',
+                        'mart',
                         style: AppTypography.displayMedium.copyWith(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w800,

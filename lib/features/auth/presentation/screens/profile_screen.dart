@@ -421,7 +421,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Welcome to SobjiHaat!',
+                'Welcome to Mojutmart!',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -1087,7 +1087,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text('Are you sure you want to sign out of SobjiHaat?'),
+        content: const Text('Are you sure you want to sign out of Mojutmart?'),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(

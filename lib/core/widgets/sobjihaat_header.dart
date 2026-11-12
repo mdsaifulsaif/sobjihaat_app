@@ -562,7 +562,7 @@ class _SobjiHaatHeaderState extends ConsumerState<SobjiHaatHeader> {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'SobjiHaat',
+                        'Mojutmart',
                         style: TextStyle(
                           color: Color(0xFF1E293B),
                           fontSize: 20,

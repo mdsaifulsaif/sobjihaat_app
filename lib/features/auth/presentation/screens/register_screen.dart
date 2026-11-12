@@ -129,7 +129,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 children: [
                   const AppLogo(
                     size: 54,
-                    subtitle: 'Join SobjiHaat to get farm-fresh groceries',
+                    subtitle: 'Join Mojutmart to get farm-fresh groceries',
                   ),
                   const SizedBox(height: 24),
 

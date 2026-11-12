@@ -298,7 +298,7 @@ class DeliveryChargesSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 const Text(
-                  'Zero delivery fee on your very first order at SobjiHaat!',
+                  'Zero delivery fee on your very first order at Mojutmart!',
                   style: TextStyle(
                     fontSize: 10.5,
                     color: Color(0xFF64748B),

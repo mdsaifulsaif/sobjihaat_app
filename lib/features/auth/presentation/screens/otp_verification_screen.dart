@@ -95,7 +95,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     if (success) {
       SnackbarUtils.showSuccess(
         context,
-        'Email verified successfully! Welcome to SobjiHaat 🎉',
+        'Email verified successfully! Welcome to Mojutmart 🎉',
       );
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const MainNavScreen()),
