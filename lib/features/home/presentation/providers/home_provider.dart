@@ -5,6 +5,7 @@ import '../../../subscriptions/data/models/subscription_package_model.dart';
 import '../../data/datasources/home_remote_datasource.dart';
 import '../../data/models/area_model.dart';
 import '../../data/models/banner_model.dart';
+import '../../data/models/promotional_banner_model.dart';
 import '../../data/models/brand_model.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/shipping_tier_model.dart';
@@ -16,6 +17,7 @@ final homeRemoteDataSourceProvider = Provider<HomeRemoteDataSource>((ref) {
 
 class HomeData {
   final List<BannerModel> banners;
+  final List<PromotionalBannerModel> promotionalBanners;
   final List<CategoryModel> categories;
   final List<ProductModel> featuredProducts;
   final List<SubscriptionPackageModel> subscriptionPackages;
@@ -25,6 +27,7 @@ class HomeData {
 
   HomeData({
     this.banners = const [],
+    this.promotionalBanners = const [],
     this.categories = const [],
     this.featuredProducts = const [],
     this.subscriptionPackages = const [],
@@ -60,6 +63,7 @@ final homeDataProvider = FutureProvider<HomeData>((ref) async {
 
   final results = await Future.wait([
     dataSource.getBanners().catchError((_) => <BannerModel>[]),
+    dataSource.getPromotionalBanners().catchError((_) => <PromotionalBannerModel>[]),
     dataSource.getCategories().catchError((_) => <CategoryModel>[]),
     dataSource.getFeaturedProducts().catchError((_) => <ProductModel>[]),
     dataSource.getSubscriptionPackages().catchError((_) => <SubscriptionPackageModel>[]),
@@ -70,22 +74,26 @@ final homeDataProvider = FutureProvider<HomeData>((ref) async {
 
   final banners =
       (results[0] as List<dynamic>?)?.whereType<BannerModel>().toList() ?? <BannerModel>[];
+  final promotionalBanners =
+      (results[1] as List<dynamic>?)?.whereType<PromotionalBannerModel>().toList() ??
+          <PromotionalBannerModel>[];
   final categories =
-      (results[1] as List<dynamic>?)?.whereType<CategoryModel>().toList() ?? <CategoryModel>[];
+      (results[2] as List<dynamic>?)?.whereType<CategoryModel>().toList() ?? <CategoryModel>[];
   final products =
-      (results[2] as List<dynamic>?)?.whereType<ProductModel>().toList() ?? <ProductModel>[];
-  final packages = (results[3] as List<dynamic>?)
+      (results[3] as List<dynamic>?)?.whereType<ProductModel>().toList() ?? <ProductModel>[];
+  final packages = (results[4] as List<dynamic>?)
           ?.whereType<SubscriptionPackageModel>()
           .toList() ??
       <SubscriptionPackageModel>[];
   final brands =
-      (results[4] as List<dynamic>?)?.whereType<BrandModel>().toList() ?? BrandModel.fallbackBrands;
+      (results[5] as List<dynamic>?)?.whereType<BrandModel>().toList() ?? BrandModel.fallbackBrands;
   final areas =
-      (results[5] as List<dynamic>?)?.whereType<AreaModel>().toList() ?? <AreaModel>[];
-  final shippingConfig = results[6] as ShippingConfigModel?;
+      (results[6] as List<dynamic>?)?.whereType<AreaModel>().toList() ?? <AreaModel>[];
+  final shippingConfig = results[7] as ShippingConfigModel?;
 
   return HomeData(
     banners: banners,
+    promotionalBanners: promotionalBanners,
     categories: categories,
     featuredProducts: products,
     subscriptionPackages: packages,

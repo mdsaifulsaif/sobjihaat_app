@@ -537,65 +537,40 @@ class _SobjiHaatHeaderState extends ConsumerState<SobjiHaatHeader> {
                 const SizedBox(width: 8),
               ],
 
-              // Brand Logo + Name: Green rounded "S" Box + "ShodaiBari" (Matching web header)
+              // Brand Logo: SobjiHaat Logo from assets
               GestureDetector(
                 onTap: () {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.25),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'S',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                          ),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  height: 32,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.eco_rounded, color: Colors.white, size: 20),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 9),
-                    RichText(
-                      text: const TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Shodai',
-                            style: TextStyle(
-                              color: Color(0xFF1E293B),
-                              fontSize: 21,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.4,
-                            ),
-                          ),
-                          TextSpan(
-                            text: 'Bari',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 21,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.4,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(width: 8),
+                      const Text(
+                        'SobjiHaat',
+                        style: TextStyle(
+                          color: Color(0xFF1E293B),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 

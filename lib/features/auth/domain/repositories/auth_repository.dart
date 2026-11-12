@@ -30,6 +30,9 @@ abstract class AuthRepository {
     String? city,
     String? addressState,
     String? postalCode,
+    String? area,
+    String? areaId,
+    String? avatarPath,
   });
   Future<void> logout();
 }

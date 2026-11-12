@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -7,7 +10,10 @@ import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../data/models/user_model.dart';
+import '../../../home/data/models/area_model.dart';
+import '../../../home/presentation/providers/home_provider.dart';
 import '../../../orders/presentation/screens/my_orders_screen.dart';
+import '../../../orders/presentation/screens/track_order_screen.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
@@ -25,9 +31,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late final TextEditingController _lastNameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _addressLineController;
-  late final TextEditingController _cityController;
-  late final TextEditingController _stateController;
-  late final TextEditingController _postalCodeController;
+
+  File? _avatarFile;
+  String? _selectedAreaId;
+  String? _selectedAreaName;
 
   bool _isSaving = false;
   String? _initializedUserId;
@@ -39,9 +46,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _lastNameController = TextEditingController();
     _phoneController = TextEditingController();
     _addressLineController = TextEditingController();
-    _cityController = TextEditingController();
-    _stateController = TextEditingController();
-    _postalCodeController = TextEditingController();
   }
 
   @override
@@ -50,13 +54,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _lastNameController.dispose();
     _phoneController.dispose();
     _addressLineController.dispose();
-    _cityController.dispose();
-    _stateController.dispose();
-    _postalCodeController.dispose();
     super.dispose();
   }
 
-  void _populateFormIfChanged(UserModel? user) {
+  void _populateFormIfChanged(UserModel? user, List<AreaModel> areas) {
     if (user == null) {
       _initializedUserId = null;
       return;
@@ -67,9 +68,48 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _lastNameController.text = user.lastName;
       _phoneController.text = user.phoneNumber ?? '';
       _addressLineController.text = user.shippingAddress?.addressLine ?? '';
-      _cityController.text = user.shippingAddress?.city ?? '';
-      _stateController.text = user.shippingAddress?.state ?? '';
-      _postalCodeController.text = user.shippingAddress?.postalCode ?? '';
+
+      // Match area by id or name
+      final userAreaId = user.shippingAddress?.areaId;
+      final userAreaName = user.shippingAddress?.area;
+
+      if (userAreaId != null && userAreaId.isNotEmpty) {
+        final match = areas.where((a) => a.id == userAreaId).firstOrNull;
+        _selectedAreaId = userAreaId;
+        _selectedAreaName = match?.name ?? userAreaName;
+      } else if (userAreaName != null && userAreaName.isNotEmpty) {
+        final match = areas.where((a) => a.name.toLowerCase() == userAreaName.toLowerCase()).firstOrNull;
+        _selectedAreaId = match?.id;
+        _selectedAreaName = userAreaName;
+      } else {
+        _selectedAreaId = null;
+        _selectedAreaName = null;
+      }
+    }
+  }
+
+  Future<void> _pickAvatar() async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (picked != null) {
+        setState(() {
+          _avatarFile = File(picked.path);
+        });
+        if (mounted) {
+          SnackbarUtils.showSuccess(context, 'Avatar selected! Click Save Changes to apply.');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarUtils.showError(context, 'Could not select image: $e');
+      }
     }
   }
 
@@ -94,13 +134,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       lastName: _lastNameController.text.trim(),
       phoneNumber: phone,
       addressLine: _addressLineController.text.trim(),
-      city: _cityController.text.trim(),
-      addressState: _stateController.text.trim(),
-      postalCode: _postalCodeController.text.trim(),
+      area: _selectedAreaName,
+      areaId: _selectedAreaId,
+      city: 'Barisal',
+      addressState: 'Barisal',
+      postalCode: '8200',
+      avatarPath: _avatarFile?.path,
     );
 
     if (mounted) {
-      setState(() => _isSaving = false);
+      setState(() {
+        _isSaving = false;
+        if (success) {
+          _avatarFile = null;
+        }
+      });
       if (success) {
         SnackbarUtils.showSuccess(context, 'Profile updated successfully! 🎉');
       } else {
@@ -120,7 +168,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
         return Padding(
@@ -197,18 +245,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final user = authState.user;
-    _populateFormIfChanged(user);
 
-    final isRider = user?.role == 'rider';
-    final isAdmin = user?.role == 'admin';
+    final homeData = ref.watch(homeDataProvider).value;
+    final areas = homeData?.areas.where((a) => a.isActive).toList() ?? <AreaModel>[];
+
+    _populateFormIfChanged(user, areas);
+
+    final isRider = user?.role.toLowerCase() == 'rider';
+    final isAdmin = user?.role.toLowerCase() == 'admin';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF8FAFC),
         elevation: 0,
+        scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        leadingWidth: 54,
+        leadingWidth: 56,
         leading: Navigator.canPop(context)
             ? Center(
                 child: InkWell(
@@ -221,10 +274,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
                     child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 16,
+                      Icons.arrow_back_rounded,
+                      size: 18,
                       color: Color(0xFF334155),
                     ),
                   ),
@@ -238,7 +298,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const Text(
               'Account Profile',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 19,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF0F172A),
                 letterSpacing: -0.3,
@@ -255,10 +315,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ],
         ),
         actions: [
-          // Rider / Admin Quick Dashboard Link Pill (Matching web profile page)
+          // Rider Dashboard Pill
           if (isRider)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: 6),
               child: Center(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -269,7 +329,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(Icons.local_shipping_rounded, size: 14, color: AppColors.primary),
+                      Icon(Icons.local_shipping_outlined, size: 14, color: AppColors.primary),
                       SizedBox(width: 4),
                       Text(
                         'Rider',
@@ -284,9 +344,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
             )
+          // Admin Panel Pill
           else if (isAdmin)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: 6),
               child: Center(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -297,7 +358,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(Icons.shield_rounded, size: 14, color: Color(0xFF7E22CE)),
+                      Icon(Icons.shield_outlined, size: 14, color: Color(0xFF7E22CE)),
                       SizedBox(width: 4),
                       Text(
                         'Admin',
@@ -320,7 +381,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      body: user == null ? _buildGuestView() : _buildProfileContent(user),
+      body: user == null ? _buildGuestView() : _buildProfileContent(user, areas),
     );
   }
 
@@ -360,7 +421,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Welcome to ShodaiBari!',
+                'Welcome to SobjiHaat!',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -441,8 +502,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  // --- LOGGED IN USER PROFILE (Exact replica of web /profile/page.tsx) ---
-  Widget _buildProfileContent(UserModel user) {
+  // --- LOGGED IN USER PROFILE (Exact replica of redesigned web /profile/page.tsx) ---
+  Widget _buildProfileContent(UserModel user, List<AreaModel> areas) {
     final role = user.role.toLowerCase();
     final isAdmin = role == 'admin';
     final isRider = role == 'rider';
@@ -455,9 +516,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // 1. Profile Container Card (Matching web card structure)
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.04),
@@ -466,278 +525,334 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ],
             ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Top Banner with Brand Gradient & Organic Patterns (Matching web page.tsx lines 168-179)
-                Stack(
-                  children: [
-                    Container(
-                      height: 120,
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.primary,
-                            Color(0xFF3B6412),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Profile Identity Bar (Matching web page.tsx lines 186-304)
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white,
+                          Color(0xFFF8FAFC),
+                          Color(0xFFECFDF5),
+                        ],
+                      ),
+                      border: Border(
+                        bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1.5),
                       ),
                     ),
-                    // Soft decorative background circles
-                    Positioned(
-                      top: -20,
-                      right: -20,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.12),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: -15,
-                      left: 20,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.10),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Profile Identity Bar (Matching web page.tsx lines 181-273)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Avatar overlapping top banner
-                      Transform.translate(
-                        offset: const Offset(0, -45),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            // Avatar container with white border & shadow
-                            Stack(
-                              children: [
-                                Container(
-                                  width: 90,
-                                  height: 90,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.white, width: 3.5),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.15),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-                                      ? Image.network(
-                                          user.avatarUrl!,
+                      // Avatar + User Info Row
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Circular Avatar with Camera upload trigger
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 84,
+                                height: 84,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                  border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.08),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipOval(
+                                  child: _avatarFile != null
+                                      ? Image.file(
+                                          _avatarFile!,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) =>
-                                              _buildAvatarFallback(user),
                                         )
-                                      : _buildAvatarFallback(user),
+                                      : (user.avatarUrl != null && user.avatarUrl!.isNotEmpty)
+                                          ? Image.network(
+                                              user.avatarUrl!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, _, _) => _buildAvatarFallback(user),
+                                            )
+                                          : _buildAvatarFallback(user),
                                 ),
-                                // Camera change badge (bottom right)
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
-                                  child: InkWell(
-                                    onTap: () {
-                                      SnackbarUtils.showInfo(
-                                        context,
-                                        'Upload avatar from web panel or attach image.',
-                                      );
-                                    },
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.1),
-                                            blurRadius: 4,
-                                          ),
-                                        ],
-                                      ),
-                                      child: const Icon(
-                                        Icons.camera_alt_rounded,
-                                        size: 15,
-                                        color: AppColors.primary,
-                                      ),
+                              ),
+                              // Camera icon button at bottom-right
+                              Positioned(
+                                bottom: -2,
+                                right: -2,
+                                child: InkWell(
+                                  onTap: _pickAvatar,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.12),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt_outlined,
+                                      size: 15,
+                                      color: AppColors.primary,
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 16),
 
-                      // User Name & Badges
-                      Transform.translate(
-                        offset: const Offset(0, -32),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
+                          // User Name, Badges & Joined Info
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Flexible(
-                                  child: Text(
-                                    user.fullName,
-                                    style: const TextStyle(
-                                      fontSize: 19,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFF0F172A),
-                                      letterSpacing: -0.3,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                const Icon(
-                                  Icons.check_circle_rounded,
-                                  size: 18,
-                                  color: AppColors.primary,
-                                ),
-                                const SizedBox(width: 8),
-                                // Role Badge
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: isAdmin
-                                        ? const Color(0xFFF3E8FF)
-                                        : isRider
-                                            ? const Color(0xFFDBEAFE)
-                                            : const Color(0xFFD1FAE5),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isAdmin
-                                          ? const Color(0xFFE9D5FF)
-                                          : isRider
-                                              ? const Color(0xFFBFDBFE)
-                                              : const Color(0xFFA7F3D0),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        isAdmin
-                                            ? Icons.shield_rounded
-                                            : isRider
-                                                ? Icons.local_shipping_rounded
-                                                : Icons.person_rounded,
-                                        size: 11,
-                                        color: isAdmin
-                                            ? const Color(0xFF7E22CE)
-                                            : isRider
-                                                ? const Color(0xFF1D4ED8)
-                                                : const Color(0xFF047857),
+                                // Full Name + Verified checkmark + Role badge
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 6,
+                                  runSpacing: 4,
+                                  children: [
+                                    Text(
+                                      user.fullName,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF0F172A),
+                                        letterSpacing: -0.3,
                                       ),
-                                      const SizedBox(width: 3),
-                                      Text(
-                                        role.toUpperCase(),
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w800,
+                                    ),
+                                    const Icon(
+                                      Icons.check_circle_rounded,
+                                      size: 18,
+                                      color: AppColors.primary,
+                                    ),
+                                    // Role Badge
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                      decoration: BoxDecoration(
+                                        color: isAdmin
+                                            ? const Color(0xFFF3E8FF)
+                                            : isRider
+                                                ? const Color(0xFFDBEAFE)
+                                                : const Color(0xFFD1FAE5),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
                                           color: isAdmin
-                                              ? const Color(0xFF7E22CE)
+                                              ? const Color(0xFFE9D5FF)
                                               : isRider
-                                                  ? const Color(0xFF1D4ED8)
-                                                  : const Color(0xFF047857),
-                                          letterSpacing: 0.5,
+                                                  ? const Color(0xFFBFDBFE)
+                                                  : const Color(0xFFA7F3D0),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-
-                            // Meta detail strip: Email & Phone
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 4,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.mail_outline_rounded, size: 14, color: Color(0xFF94A3B8)),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      user.email,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFF475569),
-                                        fontWeight: FontWeight.w500,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            isAdmin
+                                                ? Icons.shield_outlined
+                                                : isRider
+                                                    ? Icons.local_shipping_outlined
+                                                    : Icons.person_outline,
+                                            size: 11,
+                                            color: isAdmin
+                                                ? const Color(0xFF7E22CE)
+                                                : isRider
+                                                    ? const Color(0xFF1D4ED8)
+                                                    : const Color(0xFF047857),
+                                          ),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            role.toUpperCase(),
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w800,
+                                              color: isAdmin
+                                                  ? const Color(0xFF7E22CE)
+                                                  : isRider
+                                                      ? const Color(0xFF1D4ED8)
+                                                      : const Color(0xFF047857),
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                                if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty)
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.phone_outlined, size: 14, color: Color(0xFF94A3B8)),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        user.phoneNumber!,
+                                const SizedBox(height: 6),
+
+                                // Email Meta
+                                Row(
+                                  children: [
+                                    const Icon(Icons.mail_outline_rounded, size: 13, color: Color(0xFF94A3B8)),
+                                    const SizedBox(width: 5),
+                                    Flexible(
+                                      child: Text(
+                                        user.email,
                                         style: const TextStyle(
                                           fontSize: 12,
-                                          color: Color(0xFF475569),
                                           fontWeight: FontWeight.w500,
+                                          color: Color(0xFF475569),
                                         ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+
+                                // Phone & Joined Meta row
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 8,
+                                  runSpacing: 2,
+                                  children: [
+                                    if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty) ...[
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.phone_outlined, size: 13, color: Color(0xFF94A3B8)),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            user.phoneNumber!,
+                                            style: const TextStyle(
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w500,
+                                              color: Color(0xFF475569),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const Text('•', style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12)),
+                                    ],
+                                    if (user.createdAt != null) ...[
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF94A3B8)),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Joined ${DateFormat('MMM yyyy').format(user.createdAt!)}',
+                                            style: const TextStyle(
+                                              fontSize: 11.5,
+                                              color: Color(0xFF94A3B8),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
-                                  ),
+                                  ],
+                                ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Quick Action Buttons: Order History & Track Order (Matching web page.tsx lines 282-302)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
+                                );
+                              },
+                              icon: const Icon(Icons.shopping_bag_outlined, size: 16),
+                              label: const Text(
+                                'Order History',
+                                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const TrackOrderScreen()),
+                                );
+                              },
+                              icon: const Icon(Icons.local_shipping_outlined, size: 16, color: Color(0xFF475569)),
+                              label: const Text(
+                                'Track Order',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
 
-                const Divider(height: 1, color: Color(0xFFF1F5F9)),
-
-                // Form Content (Matching web page.tsx lines 276-457)
+                // Form Content (Matching web page.tsx lines 306-505)
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Section 1: Personal Information
                       _buildSectionHeader(
-                        icon: Icons.person_rounded,
+                        icon: Icons.person_outline_rounded,
                         title: 'Personal Information',
                       ),
                       const SizedBox(height: 14),
 
-                      // First Name & Last Name
+                      // First Name & Last Name Grid
                       Row(
                         children: [
                           Expanded(
@@ -777,58 +892,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         icon: Icons.mail_outline_rounded,
                         readOnly: true,
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 24),
 
                       // Section 2: Default Delivery Address
                       _buildSectionHeader(
-                        icon: Icons.location_on_rounded,
+                        icon: Icons.location_on_outlined,
                         title: 'Default Delivery Address',
+                        badgeText: '📍 Barisal City Delivery',
                       ),
                       const SizedBox(height: 14),
 
-                      // Street Address Line
+                      // Delivery Area Dropdown & City
+                      _buildAreaDropdown(areas),
+                      const SizedBox(height: 12),
+
+                      // City / Coverage (Fixed to Barisal City)
+                      _buildInputField(
+                        label: 'City / Coverage',
+                        controller: TextEditingController(text: 'Barisal City (Default)'),
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Street / House & Road Address
                       _buildInputField(
                         label: 'Street / House & Road Address',
                         controller: _addressLineController,
                         icon: Icons.location_on_outlined,
-                        hintText: 'e.g. House #12, Road #4, Bangla Bazar',
-                      ),
-                      const SizedBox(height: 12),
-
-                      // City, State, Postal Code
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildInputField(
-                              label: 'City',
-                              controller: _cityController,
-                              hintText: 'e.g. Barisal',
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildInputField(
-                              label: 'State / Division',
-                              controller: _stateController,
-                              hintText: 'e.g. Barisal',
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildInputField(
-                              label: 'Postal Code',
-                              controller: _postalCodeController,
-                              hintText: 'e.g. 8200',
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                        ],
+                        hintText: 'e.g. House #12, Road #4, Holding or Landmark',
                       ),
                       const SizedBox(height: 20),
 
-                      // Bottom Save Actions
+                      // Bottom Save Actions (Matching web page.tsx lines 479-504)
                       Container(
-                        padding: const EdgeInsets.only(top: 14),
+                        padding: const EdgeInsets.only(top: 16),
                         decoration: const BoxDecoration(
                           border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
                         ),
@@ -838,7 +935,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             Text(
                               'Keep your profile updated for hassle-free vegetable deliveries.',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 11.5,
                                 color: Colors.grey.shade500,
                               ),
                               textAlign: TextAlign.center,
@@ -853,21 +950,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                elevation: 2,
+                                elevation: 0,
+                                shadowColor: AppColors.primary.withValues(alpha: 0.35),
                               ),
                               child: _isSaving
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
+                                  ? Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: const [
+                                        SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Saving Changes...',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
                                     )
                                   : Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: const [
-                                        Icon(Icons.save_rounded, size: 18),
+                                        Icon(Icons.save_outlined, size: 18),
                                         SizedBox(width: 8),
                                         Text(
                                           'Save Changes',
@@ -888,9 +999,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 16),
 
-          // 2. Additional Quick Menu Options (Orders, WhatsApp, Complaints)
+          // 2. Additional Quick Menu Options (WhatsApp, Complaints)
           Material(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -902,20 +1014,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Column(
                 children: [
                   _buildMenuItem(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'Order History',
-                    subtitle: 'View active and previous grocery orders',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MyOrdersScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const Divider(height: 1, indent: 56, color: Color(0xFFF1F5F9)),
-                  _buildMenuItem(
                     icon: Icons.chat_rounded,
                     title: 'WhatsApp Customer Support',
                     subtitle: '+${ApiConstants.whatsAppSupportNumber} (8:00 AM - 10:00 PM)',
@@ -923,7 +1021,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     onTap: () {
                       SnackbarUtils.showInfo(
                         context,
-                        'Opening WhatsApp Support (+${ApiConstants.whatsAppSupportNumber})...',
+                        'WhatsApp Support: +${ApiConstants.whatsAppSupportNumber}',
                       );
                     },
                   ),
@@ -933,48 +1031,85 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     title: 'Have a Complaint?',
                     subtitle: 'Submit feedback directly to executive support',
                     iconColor: Colors.amber.shade800,
-                    onTap: () => _showComplaintDialog(),
+                    onTap: () => ComplaintModal.show(context),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // 3. Sign Out Button
           Material(
             color: const Color(0xFFFFEBEE),
             borderRadius: BorderRadius.circular(12),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
-              ),
-              child: ListTile(
-              onTap: () async {
-                await ref.read(authNotifierProvider.notifier).logout();
-                if (mounted) {
-                  SnackbarUtils.showInfo(context, 'Signed out successfully');
-                }
-              },
-              leading: const Icon(Icons.logout_rounded, color: AppColors.error, size: 22),
-              title: const Text(
-                'Sign Out',
-                style: TextStyle(
-                  color: AppColors.error,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
+            child: InkWell(
+              onTap: () => _showSignOutDialog(),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
                 ),
-              ),
-              trailing: const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.error,
-                size: 20,
+                child: Row(
+                  children: const [
+                    Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Sign Out',
+                        style: TextStyle(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.error,
+                      size: 20,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 36),
+          const SizedBox(height: 36),
+        ],
+      ),
+    );
+  }
+
+  void _showSignOutDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w800)),
+        content: const Text('Are you sure you want to sign out of SobjiHaat?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref.read(authNotifierProvider.notifier).logout();
+              if (mounted) {
+                SnackbarUtils.showInfo(context, 'Signed out successfully');
+              }
+            },
+            child: const Text('Sign Out'),
+          ),
         ],
       ),
     );
@@ -987,7 +1122,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: Text(
           user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : 'U',
           style: const TextStyle(
-            fontSize: 34,
+            fontSize: 32,
             fontWeight: FontWeight.w900,
             color: AppColors.primary,
           ),
@@ -999,6 +1134,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildSectionHeader({
     required IconData icon,
     required String title,
+    String? badgeText,
   }) {
     return Row(
       children: [
@@ -1014,15 +1150,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          title.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF1E293B),
-            letterSpacing: 0.5,
+        Expanded(
+          child: Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1E293B),
+              letterSpacing: 0.5,
+            ),
           ),
         ),
+        if (badgeText != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFA7F3D0)),
+            ),
+            child: Text(
+              badgeText,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF047857),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -1101,6 +1256,88 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  Widget _buildAreaDropdown(List<AreaModel> areas) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Delivery Area (Barisal City) *',
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF475569),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: areas.any((a) => a.id == _selectedAreaId)
+                  ? _selectedAreaId
+                  : (areas.any((a) => a.name == _selectedAreaName)
+                      ? areas.firstWhere((a) => a.name == _selectedAreaName).id
+                      : null),
+              hint: Row(
+                children: const [
+                  Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF94A3B8)),
+                  SizedBox(width: 8),
+                  Text(
+                    '-- Select Your Delivery Area --',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: Color(0xFF64748B)),
+              items: areas.map((area) {
+                return DropdownMenuItem<String>(
+                  value: area.id,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          area.name,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (newAreaId) {
+                if (newAreaId != null) {
+                  final selected = areas.firstWhere((a) => a.id == newAreaId);
+                  setState(() {
+                    _selectedAreaId = selected.id;
+                    _selectedAreaName = selected.name;
+                  });
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
@@ -1140,9 +1377,5 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
       ),
     );
-  }
-
-  void _showComplaintDialog() {
-    ComplaintModal.show(context);
   }
 }

@@ -361,6 +361,9 @@ class AuthNotifier extends Notifier<AuthState> {
     String? city,
     String? addressState,
     String? postalCode,
+    String? area,
+    String? areaId,
+    String? avatarPath,
   }) async {
     state = state.copyWith(status: AuthStatus.loading, clearError: true);
     try {
@@ -372,6 +375,9 @@ class AuthNotifier extends Notifier<AuthState> {
         city: city,
         addressState: addressState,
         postalCode: postalCode,
+        area: area,
+        areaId: areaId,
+        avatarPath: avatarPath,
       );
       state = state.copyWith(
         status: AuthStatus.authenticated,

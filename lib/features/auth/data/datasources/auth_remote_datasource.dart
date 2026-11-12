@@ -34,6 +34,9 @@ abstract class AuthRemoteDataSource {
     String? city,
     String? addressState,
     String? postalCode,
+    String? area,
+    String? areaId,
+    String? avatarPath,
   });
   Future<void> logout();
 }
@@ -205,9 +208,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     String? city,
     String? addressState,
     String? postalCode,
+    String? area,
+    String? areaId,
+    String? avatarPath,
   }) async {
     try {
-      final payload = <String, dynamic>{
+      final map = <String, dynamic>{
         if (firstName != null) 'firstName': firstName.trim(),
         if (lastName != null) 'lastName': lastName.trim(),
         if (phoneNumber != null) 'phoneNumber': phoneNumber.trim(),
@@ -215,7 +221,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         if (city != null) 'city': city.trim(),
         if (addressState != null) 'state': addressState.trim(),
         if (postalCode != null) 'postalCode': postalCode.trim(),
+        if (area != null) 'area': area.trim(),
+        if (areaId != null) 'areaId': areaId.trim(),
       };
+
+      dynamic payload;
+      if (avatarPath != null && avatarPath.isNotEmpty) {
+        final formMap = Map<String, dynamic>.from(map);
+        formMap['avatar'] = await MultipartFile.fromFile(
+          avatarPath,
+          filename: avatarPath.split('/').last,
+        );
+        payload = FormData.fromMap(formMap);
+      } else {
+        payload = FormData.fromMap(map);
+      }
 
       final response = await dioClient.dio.patch(
         ApiConstants.updateProfile,

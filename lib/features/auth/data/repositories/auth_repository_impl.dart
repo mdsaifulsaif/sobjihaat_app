@@ -146,6 +146,9 @@ class AuthRepositoryImpl implements AuthRepository {
     String? city,
     String? addressState,
     String? postalCode,
+    String? area,
+    String? areaId,
+    String? avatarPath,
   }) async {
     final updated = await remoteDataSource.updateProfile(
       firstName: firstName,
@@ -155,6 +158,9 @@ class AuthRepositoryImpl implements AuthRepository {
       city: city,
       addressState: addressState,
       postalCode: postalCode,
+      area: area,
+      areaId: areaId,
+      avatarPath: avatarPath,
     );
     await storageService.saveUserData(jsonEncode(updated.toJson()));
     return updated;

@@ -36,7 +36,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final FocusNode _couponFocusNode = FocusNode();
 
   String _deliveryType = 'local'; // 'local' or 'nationwide'
-  String _addressLabel = 'home'; // 'home', 'work', 'partner', 'other'
+  final String _addressLabel = 'home'; // 'home', 'work', 'partner', 'other'
   String? _selectedAreaId;
   String _orderMode = 'normal'; // 'normal' or 'preorder'
   bool _wantsCustomTime = false;
@@ -445,20 +445,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         title: 'Delivery Address',
                         subtitle: 'Where should we bring your fresh items?',
                         children: [
-                          // Address Label Chips (Home, Work, Partner, Other)
-                          Wrap(
-                            spacing: 8,
-                            children: [
-                              _buildLabelChip('home', 'Home', Icons.home_rounded),
-                              _buildLabelChip('work', 'Work', Icons.work_rounded),
-                              _buildLabelChip('partner', 'Partner', Icons.favorite_rounded),
-                              _buildLabelChip('other', 'Other', Icons.more_horiz_rounded),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Area selector (Local Barisal City)
-
                           // Area selector (if Local) or District/Upazila (if Nationwide)
                           if (_deliveryType == 'local') ...[
                             const Text(
@@ -1006,34 +992,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildLabelChip(String value, String text, IconData icon) {
-    final isSelected = _addressLabel == value;
-    return ChoiceChip(
-      avatar: Icon(
-        icon,
-        size: 14,
-        color: isSelected ? AppColors.primary : const Color(0xFF64748B),
-      ),
-      label: Text(text),
-      selected: isSelected,
-      selectedColor: AppColors.primary.withValues(alpha: 0.12),
-      backgroundColor: const Color(0xFFF8FAFC),
-      labelStyle: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-        color: isSelected ? AppColors.primary : const Color(0xFF475569),
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
-        ),
-      ),
-      showCheckmark: false,
-      onSelected: (_) => setState(() => _addressLabel = value),
-    );
-  }
-
   // ignore: unused_element
   Widget _buildDeliveryTypeOption({
     required String type,
@@ -1474,9 +1432,39 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           if (couponDiscount > 0) ...[
             const SizedBox(height: 6),
             _buildSummaryRow(
+              'Original Total (আগে ছিল)',
+              '৳${(subtotal + shippingCharge).toInt()}',
+            ),
+            const SizedBox(height: 6),
+            _buildSummaryRow(
               'Coupon Discount',
               '-৳${couponDiscount.toInt()}',
               isDiscount: true,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.celebration_rounded, size: 15, color: Color(0xFF15803D)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'কুপনে আপনি ৳${couponDiscount.toInt()} সাশ্রয় করেছেন! (আগে ৳${(subtotal + shippingCharge).toInt()} ছিল, এখন ৳${grandTotal.toInt()})',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF15803D),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
           const SizedBox(height: 8),
@@ -1485,17 +1473,50 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total Payable',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Total Payable',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                  ),
+                  if (couponDiscount > 0)
+                    Text(
+                      'আগে ছিল: ৳${(subtotal + shippingCharge).toInt()}',
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF94A3B8),
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                ],
               ),
-              Text(
-                '৳${grandTotal.toInt()}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.primary,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  if (couponDiscount > 0) ...[
+                    Text(
+                      '৳${(subtotal + shippingCharge).toInt()}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF94A3B8),
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    '৳${grandTotal.toInt()}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1606,6 +1627,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget _buildBottomBar(double grandTotal) {
     final cartState = ref.watch(cartNotifierProvider);
     final totalCount = cartState.totalCount;
+    final subtotal = cartState.subtotal;
+    final couponDiscount = cartState.couponDiscount;
+    final shippingCharge = _shippingCharge;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1679,13 +1703,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         Icon(Icons.keyboard_arrow_up_rounded, size: 14, color: Color(0xFF64748B)),
                       ],
                     ),
-                    Text(
-                      '৳${grandTotal.toInt()}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF0F172A),
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        if (couponDiscount > 0) ...[
+                          Text(
+                            '৳${(subtotal + shippingCharge).toInt()}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF94A3B8),
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          '৳${grandTotal.toInt()}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

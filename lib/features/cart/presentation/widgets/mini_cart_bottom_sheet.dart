@@ -579,13 +579,29 @@ class _MiniCartBottomSheetState extends ConsumerState<MiniCartBottomSheet> {
                         ),
                       ],
                     ),
-                    Text(
-                      '৳${totalPayable.toInt()}',
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
+                    Row(
+                      children: [
+                        if (couponDiscount > 0) ...[
+                          Text(
+                            '৳${(subtotal).toInt()}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.65),
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        Text(
+                          '৳${totalPayable.toInt()}',
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

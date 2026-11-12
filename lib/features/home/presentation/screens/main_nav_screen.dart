@@ -6,7 +6,6 @@ import '../../../../core/widgets/user_auth_bottom_sheet.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/screens/profile_screen.dart';
 import '../../../products/presentation/screens/wishlist_screen.dart';
-import 'categories_screen.dart';
 import 'home_screen.dart';
 
 class MainNavScreen extends ConsumerStatefulWidget {
@@ -25,17 +24,20 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
 
     final screens = [
       const HomeScreen(),
-      const CategoriesScreen(),
+      const HomeScreen(), // Index 1 is Menu action (opens sidebar), stays on Home
       WishlistScreen(onExplore: () => ref.read(bottomNavIndexProvider.notifier).setIndex(0)),
       const ProfileScreen(),
     ];
+
+    // Ensure index 1 falls back to 0 for screen display
+    final activeScreenIndex = currentIndex == 1 ? 0 : currentIndex;
 
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white,
       drawer: const SobjiHaatDrawer(),
       body: IndexedStack(
-        index: currentIndex,
+        index: activeScreenIndex,
         children: screens,
       ),
       // Floating Elevated Cart Button in Center (Image 1)
@@ -45,7 +47,7 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
       bottomNavigationBar: buildSobjiHaatBottomAppBar(
         context,
         ref,
-        currentIndex: currentIndex,
+        currentIndex: currentIndex == 1 ? 0 : currentIndex,
         onTabSelected: (index) {
           if (index == 1) {
             _scaffoldKey.currentState?.openDrawer();

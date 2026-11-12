@@ -34,299 +34,65 @@ class OrderCard extends StatelessWidget {
     return '$day $month $year, $hour:$minute $ampm';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final formattedDate = _formatDate(order.createdAt);
-    final isUnpaid = order.paymentStatus.toLowerCase() != 'paid';
+  Widget _buildPaymentBadge() {
+    final method = order.paymentMethod.toLowerCase();
+    final paymentStatus = order.paymentStatus.toLowerCase();
+
+    Color bgColor = const Color(0xFFF8FAFC);
+    Color borderColor = const Color(0xFFE2E8F0);
+    Color textColor = const Color(0xFF475569);
+
+    if (method == 'cod' || method.contains('cash')) {
+      bgColor = const Color(0xFFFFFBEB);
+      borderColor = const Color(0xFFFDE68A);
+      textColor = const Color(0xFFB45309);
+    } else if (method == 'bkash') {
+      bgColor = const Color(0xFFFDF2F8);
+      borderColor = const Color(0xFFFBCFE8);
+      textColor = const Color(0xFFBE185D);
+    } else if (method == 'nagad') {
+      bgColor = const Color(0xFFFFF7ED);
+      borderColor = const Color(0xFFFED7AA);
+      textColor = const Color(0xFFC2410C);
+    }
+
+    Color statusColor = const Color(0xFFB45309); // amber unpaid
+    if (paymentStatus == 'paid') {
+      statusColor = const Color(0xFF047857); // emerald
+    } else if (paymentStatus == 'refunded') {
+      statusColor = const Color(0xFF1D4ED8); // blue
+    }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: borderColor, width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // 1. Header: Order ID + Status Badge
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Text(
-                        '#${order.orderNumber}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'monospace',
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      InkWell(
-                        onTap: () {
-                          Clipboard.setData(
-                              ClipboardData(text: order.orderNumber));
-                          SnackbarUtils.showSuccess(
-                              context, 'Order ID copied to clipboard!');
-                        },
-                        borderRadius: BorderRadius.circular(6),
-                        child: const Padding(
-                          padding: EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.copy_rounded,
-                            size: 14,
-                            color: Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                OrderStatusBadge(status: order.status, isSmall: true),
-              ],
+          Icon(Icons.credit_card_rounded, size: 11, color: textColor),
+          const SizedBox(width: 4),
+          Text(
+            order.paymentMethod.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: textColor,
             ),
           ),
-
-          // 2. Date and Location row
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today_rounded,
-                    size: 12, color: Color(0xFF94A3B8)),
-                const SizedBox(width: 5),
-                Text(
-                  formattedDate,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF64748B),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (order.deliveryAddress?.areaName != null ||
-                    order.deliveryAddress?.district != null) ...[
-                  const SizedBox(width: 10),
-                  const Text('•',
-                      style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12)),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.location_on_outlined,
-                      size: 12, color: Color(0xFF94A3B8)),
-                  const SizedBox(width: 3),
-                  Expanded(
-                    child: Text(
-                      order.deliveryAddress?.areaName ??
-                          order.deliveryAddress?.district ??
-                          '',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          Text(
+            ' • ',
+            style: TextStyle(fontSize: 10, color: textColor),
           ),
-
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 12),
-
-          // 3. Items thumbnail row
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                // Thumbnails preview
-                _buildThumbnailRow(),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        order.items.isNotEmpty
-                            ? (order.items.length == 1
-                                ? order.items.first.productName
-                                : '${order.items.first.productName} & ${order.items.length - 1} more')
-                            : 'Grocery items',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1E293B),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${order.totalItemCount} ${order.totalItemCount == 1 ? "item" : "items"} total',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-
-          // 4. Payment Info & Amount Row
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        order.paymentMethodDisplay,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF475569),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: isUnpaid
-                            ? const Color(0xFFFFFBEB)
-                            : const Color(0xFFECFDF5),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        order.paymentStatus.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
-                          color: isUnpaid
-                              ? const Color(0xFFB45309)
-                              : const Color(0xFF047857),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  '৳${order.totalAmount.toInt()}',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // 5. Actions Footer
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFAFAFA),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
-            ),
-            child: Row(
-              children: [
-                // Track button
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onTrackTap,
-                    icon: const Icon(Icons.navigation_outlined, size: 14),
-                    label: const Text('Track'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: Color(0xFFBBF7D0)),
-                      backgroundColor: const Color(0xFFF0FDF4),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Details button
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onDetailsTap,
-                    icon: const Icon(Icons.receipt_outlined, size: 14),
-                    label: const Text('Details'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF334155),
-                      side: const BorderSide(color: Color(0xFFCBD5E1)),
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-                if (order.canCancel && onCancelTap != null) ...[
-                  const SizedBox(width: 8),
-                  // Cancel button
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: onCancelTap,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFDC2626),
-                        side: const BorderSide(color: Color(0xFFFECACA)),
-                        backgroundColor: const Color(0xFFFEF2F2),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                ],
-              ],
+          Text(
+            order.paymentStatus,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: statusColor,
             ),
           ),
         ],
@@ -334,8 +100,8 @@ class OrderCard extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnailRow() {
-    final maxThumbnails = 3;
+  Widget _buildThumbnails() {
+    const maxThumbnails = 4;
     final displayItems = order.items.take(maxThumbnails).toList();
     final remainingCount = order.items.length - maxThumbnails;
 
@@ -343,45 +109,49 @@ class OrderCard extends StatelessWidget {
       children: [
         for (int i = 0; i < displayItems.length; i++)
           Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 44,
-                height: 44,
-                color: const Color(0xFFF1F5F9),
+            padding: const EdgeInsets.only(right: 8),
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(7),
                 child: displayItems[i].thumbnail.isNotEmpty
                     ? Image.network(
                         displayItems[i].thumbnail,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.eco_outlined,
+                          Icons.inventory_2_outlined,
                           size: 20,
-                          color: AppColors.primary,
+                          color: Color(0xFF94A3B8),
                         ),
                       )
                     : const Icon(
-                        Icons.eco_outlined,
+                        Icons.inventory_2_outlined,
                         size: 20,
-                        color: AppColors.primary,
+                        color: Color(0xFF94A3B8),
                       ),
               ),
             ),
           ),
         if (remainingCount > 0)
           Container(
-            width: 44,
-            height: 44,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               color: const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
             ),
             child: Center(
               child: Text(
                 '+$remainingCount',
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF475569),
                 ),
@@ -389,6 +159,278 @@ class OrderCard extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final formattedDate = _formatDate(order.createdAt);
+    final locationText = order.deliveryAddress?.areaName ??
+        order.deliveryAddress?.district ??
+        order.deliveryAddress?.upazila ??
+        'Local';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. Order Header: ID, Date, Status + Payment Badge, Total Amount (Matching Web)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Left Column: Order # + Date + Badges
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          InkWell(
+                            onTap: onDetailsTap,
+                            child: Text(
+                              '#${order.orderNumber}',
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'monospace',
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          InkWell(
+                            onTap: () {
+                              Clipboard.setData(ClipboardData(text: order.orderNumber));
+                              SnackbarUtils.showSuccess(context, 'Order ID copied!');
+                            },
+                            borderRadius: BorderRadius.circular(4),
+                            child: const Padding(
+                              padding: EdgeInsets.all(2),
+                              child: Icon(Icons.copy_rounded, size: 13, color: Color(0xFF94A3B8)),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              formattedDate,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Status Badge + Payment Badge
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          OrderStatusBadge(status: order.status, isSmall: true),
+                          _buildPaymentBadge(),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                // Right Column: Total Amount
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'Total Amount',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '৳${order.totalAmount.toInt()}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // 2. Middle: Items Thumbnails Preview (Up to 4 items)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: _buildThumbnails(),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+          // 3. Footer: Location & Item Count (Left) + Actions: Cancel, Track, Details (Right)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Location & Items Count
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined, size: 13, color: Color(0xFF94A3B8)),
+                      const SizedBox(width: 3),
+                      Flexible(
+                        child: Text(
+                          locationText,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 5),
+                        child: Text('•', style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 11)),
+                      ),
+                      Text(
+                        '${order.items.length} ${order.items.length == 1 ? "item" : "items"}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // Action Buttons
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (order.canCancel && onCancelTap != null) ...[
+                      InkWell(
+                        onTap: onCancelTap,
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFFECACA), width: 1),
+                          ),
+                          child: const Text(
+                            'Cancel Order',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFDC2626),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+
+                    // Track Button
+                    InkWell(
+                      onTap: onTrackTap,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0FDF4),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.local_shipping_outlined, size: 13, color: AppColors.primary),
+                            SizedBox(width: 4),
+                            Text(
+                              'Track',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    // Details Button
+                    InkWell(
+                      onTap: onDetailsTap,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.visibility_outlined, size: 13, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text(
+                              'Details',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

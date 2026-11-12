@@ -4,6 +4,8 @@ class ShippingAddress {
   final String? state;
   final String? postalCode;
   final String? country;
+  final String? area;
+  final String? areaId;
 
   ShippingAddress({
     this.addressLine,
@@ -11,6 +13,8 @@ class ShippingAddress {
     this.state,
     this.postalCode,
     this.country,
+    this.area,
+    this.areaId,
   });
 
   factory ShippingAddress.fromJson(Map<String, dynamic>? json) {
@@ -21,6 +25,8 @@ class ShippingAddress {
       state: json['state'] as String?,
       postalCode: json['postalCode'] as String?,
       country: json['country'] as String?,
+      area: json['area'] as String?,
+      areaId: json['areaId'] as String?,
     );
   }
 
@@ -30,6 +36,8 @@ class ShippingAddress {
         'state': state,
         'postalCode': postalCode,
         'country': country,
+        if (area != null) 'area': area,
+        if (areaId != null) 'areaId': areaId,
       };
 }
 
@@ -45,6 +53,7 @@ class UserModel {
   final bool isVerified;
   final String authProvider;
   final ShippingAddress? shippingAddress;
+  final DateTime? createdAt;
 
   UserModel({
     required this.id,
@@ -58,6 +67,7 @@ class UserModel {
     this.isVerified = false,
     this.authProvider = 'local',
     this.shippingAddress,
+    this.createdAt,
   });
 
   String get fullName {
@@ -88,6 +98,9 @@ class UserModel {
       shippingAddress: json['shippingAddress'] != null
           ? ShippingAddress.fromJson(json['shippingAddress'] as Map<String, dynamic>)
           : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
+          : null,
     );
   }
 
@@ -103,6 +116,7 @@ class UserModel {
         'isVerified': isVerified,
         'authProvider': authProvider,
         'shippingAddress': shippingAddress?.toJson(),
+        if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       };
 
   UserModel copyWith({
@@ -117,6 +131,7 @@ class UserModel {
     bool? isVerified,
     String? authProvider,
     ShippingAddress? shippingAddress,
+    DateTime? createdAt,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -130,6 +145,7 @@ class UserModel {
       isVerified: isVerified ?? this.isVerified,
       authProvider: authProvider ?? this.authProvider,
       shippingAddress: shippingAddress ?? this.shippingAddress,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }

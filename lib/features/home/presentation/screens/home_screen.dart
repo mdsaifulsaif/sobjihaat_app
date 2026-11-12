@@ -10,6 +10,7 @@ import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/presentation/screens/register_screen.dart';
 import '../../../auth/presentation/screens/profile_screen.dart';
 import '../../../orders/presentation/screens/my_orders_screen.dart';
+import '../../../orders/presentation/screens/track_order_screen.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../products/data/models/product_model.dart';
 import '../../../products/presentation/screens/category_products_screen.dart';
@@ -25,8 +26,10 @@ import '../providers/home_provider.dart';
 import 'categories_screen.dart';
 import 'brands_screen.dart';
 import '../widgets/delivery_charges_section.dart';
+import '../widgets/promotional_banners_section.dart';
 import '../../../../core/widgets/sobjihaat_drawer.dart';
 import '../../../../core/widgets/sobjihaat_header.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -202,6 +205,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                       const SizedBox(height: 22),
 
+                      // Promotional / Weekly Deal Banners Section (Matching Web PromotionalBanners.tsx)
+                      if (data.promotionalBanners.isNotEmpty) ...[
+                        PromotionalBannersSection(banners: data.promotionalBanners),
+                        const SizedBox(height: 22),
+                      ],
+
                       // 5. Combo Products Section - 3 cards visible! (Matching Image 3)
                       _buildProductSliderSection(
                         title: 'Combo Products',
@@ -251,16 +260,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  void _handleBannerNavigation(String? rawLink) async {
+    if (rawLink == null || rawLink.trim().isEmpty) return;
+    final link = rawLink.trim();
+
+    if (link.startsWith('http://') || link.startsWith('https://')) {
+      final uri = Uri.tryParse(link);
+      if (uri != null && await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+      return;
+    }
+
+    if (link.startsWith('/category/') || link.startsWith('/cat/')) {
+      final parts = link.split('/');
+      final slug = parts.isNotEmpty ? parts.last : '';
+      if (slug.isNotEmpty) {
+        final cat = CategoryModel(
+          id: slug,
+          name: slug.replaceAll('-', ' ').toUpperCase(),
+          slug: slug,
+          image: '',
+        );
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CategoryProductsScreen(category: cat),
+          ),
+        );
+      }
+      return;
+    }
+
+    if (link == '/categories') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+      );
+      return;
+    }
+
+    if (link == '/shop' || link.startsWith('/search')) {
+      String? query;
+      if (link.contains('?q=')) {
+        query = link.split('?q=').last;
+      }
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => SearchScreen(initialQuery: query ?? ''),
+        ),
+      );
+      return;
+    }
+
+    if (link.startsWith('/my-orders')) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
+      );
+      return;
+    }
+
+    if (link.startsWith('/track-order')) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const TrackOrderScreen()),
+      );
+      return;
+    }
+  }
+
   // --- 1. Promotional Banner (Matching Image 1) ---
   Widget _buildHeroBanner(List<BannerModel> banners) {
-    final bannerImages = banners.isNotEmpty
-        ? banners.map((b) => b.displayImage).toList()
-        : [
-            'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=800&q=80',
-          ];
+    final activeBanners = banners.where((b) => b.isActive).toList();
+    final bannerCount = activeBanners.isNotEmpty ? activeBanners.length : 2;
 
-    _startBannerAutoSlide(bannerImages.length);
+    _startBannerAutoSlide(bannerCount);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 12, 14, 0),
@@ -282,16 +353,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           borderRadius: BorderRadius.circular(12),
           child: PageView.builder(
             controller: _bannerPageController,
-            itemCount: bannerImages.length,
+            itemCount: bannerCount,
             onPageChanged: (idx) => setState(() => _currentBannerIndex = idx),
             itemBuilder: (context, idx) {
-              return Image.network(
-                bannerImages[idx],
-                fit: BoxFit.fill,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.white,
-                  child: const Center(
-                    child: Icon(Icons.eco_rounded, size: 48, color: AppColors.primary),
+              final banner = activeBanners.isNotEmpty ? activeBanners[idx] : null;
+              final imageUrl = banner?.displayImage ??
+                  (idx == 0
+                      ? 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80'
+                      : 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=800&q=80');
+
+              return InkWell(
+                onTap: banner?.link != null && banner!.link!.trim().isNotEmpty
+                    ? () => _handleBannerNavigation(banner.link)
+                    : null,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.fill,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.white,
+                    child: const Center(
+                      child: Icon(Icons.eco_rounded, size: 48, color: AppColors.primary),
+                    ),
                   ),
                 ),
               );

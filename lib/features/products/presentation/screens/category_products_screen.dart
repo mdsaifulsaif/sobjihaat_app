@@ -90,8 +90,12 @@ class _CategoryProductsScreenState extends ConsumerState<CategoryProductsScreen>
       bottomNavigationBar: buildSobjiHaatBottomAppBar(
         context,
         ref,
-        currentIndex: 1, // Category active
+        currentIndex: 0,
         onTabSelected: (index) {
+          if (index == 1) {
+            _scaffoldKey.currentState?.openDrawer();
+            return;
+          }
           ref.read(bottomNavIndexProvider.notifier).setIndex(index);
           Navigator.of(context).popUntil((route) => route.isFirst);
         },

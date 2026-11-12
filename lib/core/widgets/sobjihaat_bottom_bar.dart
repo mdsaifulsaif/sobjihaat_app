@@ -126,7 +126,7 @@ Widget buildSobjiHaatBottomAppBar(
     required String label,
     int badgeCount = 0,
   }) {
-    final isSelected = currentIndex == index;
+    final isSelected = index != 1 && currentIndex == index;
     return InkWell(
       onTap: () => handleNav(index),
       borderRadius: BorderRadius.circular(12),
@@ -202,12 +202,12 @@ Widget buildSobjiHaatBottomAppBar(
             outlineIcon: Icons.home_outlined,
             label: 'Home',
           ),
-          // 2. Categories
+          // 2. Menu (Opens Drawer)
           buildNavItem(
             index: 1,
             icon: Icons.grid_view_rounded,
             outlineIcon: Icons.grid_view_outlined,
-            label: 'Category',
+            label: 'Menu',
           ),
           // Spacer for Center Floating Cart Button
           const SizedBox(width: 48),

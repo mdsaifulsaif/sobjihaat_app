@@ -6,6 +6,7 @@ import '../../../products/data/models/product_model.dart';
 import '../../../subscriptions/data/models/subscription_package_model.dart';
 import '../models/area_model.dart';
 import '../models/banner_model.dart';
+import '../models/promotional_banner_model.dart';
 import '../models/brand_model.dart';
 import '../models/category_model.dart';
 import '../models/shipping_tier_model.dart';
@@ -28,6 +29,7 @@ class PaginatedCategoriesResponse {
 
 abstract class HomeRemoteDataSource {
   Future<List<BannerModel>> getBanners();
+  Future<List<PromotionalBannerModel>> getPromotionalBanners();
   Future<List<CategoryModel>> getCategories({int limit = 100});
   Future<PaginatedCategoriesResponse> getPaginatedCategories({
     int page = 1,
@@ -55,6 +57,26 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
         return (data['data'] as List)
             .whereType<Map<String, dynamic>>()
             .map((e) => BannerModel.fromJson(e))
+            .where((b) => b.isActive)
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  Future<List<PromotionalBannerModel>> getPromotionalBanners() async {
+    try {
+      final response = await dioClient.dio.get(ApiConstants.promotionalBanners);
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['data'] is List) {
+        return (data['data'] as List)
+            .whereType<Map<String, dynamic>>()
+            .map((e) => PromotionalBannerModel.fromJson(e))
             .where((b) => b.isActive)
             .toList();
       }

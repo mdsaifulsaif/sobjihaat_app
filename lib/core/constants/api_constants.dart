@@ -41,6 +41,7 @@ class ApiConstants {
 
   // Store & Catalog Endpoints
   static const String banners = '/banners';
+  static const String promotionalBanners = '/promotional-banners';
   static const String categories = '/categories';
   static const String products = '/products';
   static String productsByCategory(String slug) => '/products/category/$slug';
